@@ -31,7 +31,24 @@ function check_header($header)
 
 function check_variable($var)
 {
-    #TODO implement
+    $pos_delim = strpos($var, "@");
+    if ( $pos_delim == false ) { #== because @ can not be at index 0 (GF@...)
+        error_log("Invalid arugment - variable: ".$var."\n");
+        exit(23);
+    }
+
+    $frame = substr($var, 0, $pos_delim);
+    if ( ! preg_match("/^((gf)|(lf)|(tf))$/i", $frame) ){
+        error_log("Invalid arugment - variable: ".$var."\n");
+        exit(23);
+    }
+
+    $var_id = substr($var, $pos_delim+1);
+    if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$var_id)){
+        error_log("Invalid arugment - variable: ".$var."\n");
+        exit(23);
+    }
+
     return true;
 }
 
@@ -55,7 +72,7 @@ function check_type($type)
         case "string":
             return true;
         default:
-            error_log("Invalid type: ".$type."\n");
+            error_log("Invalid argument - type: ".$type."\n");
             exit (23);
     }
 }
