@@ -63,27 +63,70 @@ function check_argc($line, $count)
 
 function replace_special_in_string($string)
 {
-    #TODO implement function which replaces:
     # < = &lt
     # > = &gt
     # & = &amp
     # ...
+    return str_replace(array("<", ">","&"), array("&lt", "&gt", "&amp"), $string);
 }
 
 function arg_get_type($arg)
 {
-    #TODO implement function which separates type from argument e.g. $arg = int@5 returns "int"
     #Domain = {int, bool, string, nil, label, type, var}
-    return "type_temp";
+    $pos_delim = strpos($arg, "@");
+    if ( $pos_delim === false ) { # No @ found means label or type
+
+        # Type
+        if ( $arg == "int" || $arg == "string" || $arg == "bool"){
+            return "type";
+        }
+
+        # Label
+        else{
+            return "label";
+        }
+    }
+
+    $type = substr($arg, 0, $pos_delim);
+    # May be a variable
+    if (strtoupper($type) == "LF" || strtoupper($type) == "GF" || strtoupper($type) == "TF"){
+        return "var";
+    }
+
+    return $type;
 }
 
 function arg_get_value($arg)
 {
-    #TODO implement function which returns correct value for arg (read specification)
     #for strings use replace_special_in_string()
     # wo/ type and @
     # w/ uppercase frame and @
-    return "value_temp";
+
+    $pos_delim = strpos($arg, "@");
+
+    if ( $pos_delim === false ){ # No "@" found means label or type
+        return $arg;
+    }
+
+    $type = substr($arg, 0, $pos_delim);
+    switch (strtoupper($type)) {
+        case "INT":
+        case "BOOL":
+        case "NIL":
+            return substr($arg, $pos_delim + 1);
+
+        case "STRING":
+            return replace_special_in_string(substr($arg, $pos_delim+1));
+
+        case "GF":
+        case "LF":
+        case "TF":
+            return strtoupper($type).substr($arg, $pos_delim); #uppercase(FRAME) + @ + var_id
+
+        default:
+            error_log("Invalid type in arg_get_value(): ".$arg."\n");
+            exit(23);
+    }
 }
 
 function add_arg($instruction, $order, $arg)
@@ -163,7 +206,7 @@ $header_checked = false;
 while ($line = fgets($file_input)){
     # Remove comments and skip empty lines
     remove_comment($line, "#");
-    if ( $line === ""){
+    if ( trim($line) == ""){
         continue;
     }
 
@@ -222,7 +265,7 @@ while ($line = fgets($file_input)){
             check_argc($line, 3);
             check_variable($line[1]);
             check_symbol($line[2]);
-            add_instruction($xml, $inst_ord++, strtoupper($line[0]));
+            add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1], $line[2]);
             break;
 
         # <var> <type>
