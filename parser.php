@@ -2,6 +2,11 @@
 # Redirect error messages to stderr
 ini_set('display_errors', 'stderr');
 
+function error($msg, $exit_code){
+    error_log($msg."\n");
+    exit($exit_code);
+}
+
 function is_arg($name, $options_array)
 {
     if(array_key_exists($name, $options_array) || array_key_exists($name[0], $options_array)){
@@ -24,8 +29,7 @@ function remove_comment(&$string, $com_symbol)
 function check_header($header)
 {
     if ( ! ($header === ".IPPcode23") ){
-        error_log("Wrong or missing header in the input file. Header: ".$header);
-        exit(21);
+        error("Wrong or missing header in the input file. Header: ".$header, 21);
     }
 }
 
@@ -33,20 +37,17 @@ function check_variable($var)
 {
     $pos_delim = strpos($var, "@");
     if ( $pos_delim == false ) { #== because @ can not be at index 0 (GF@...)
-        error_log("Invalid arugment - variable: ".$var."\n");
-        exit(23);
+        return false;
     }
 
     $frame = substr($var, 0, $pos_delim);
     if ( ! preg_match("/^((gf)|(lf)|(tf))$/i", $frame) ){
-        error_log("Invalid arugment - variable: ".$var."\n");
-        exit(23);
+        return false;
     }
 
     $var_id = substr($var, $pos_delim+1);
     if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$var_id)){
-        error_log("Invalid arugment - variable: ".$var."\n");
-        exit(23);
+        return false;
     }
 
     return true;
@@ -55,10 +56,11 @@ function check_variable($var)
 function check_label($label)
 {
     if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$label)){
-        error_log("Invalid arugment - variable: ".$label."\n");
-        exit(23);
+        return false;
     }
-    return true;
+    else{
+        return true;
+    }
 }
 
 function check_symbol($symbol)
@@ -75,8 +77,7 @@ function check_type($type)
         case "string":
             return true;
         default:
-            error_log("Invalid argument - type: ".$type."\n");
-            exit (23);
+            return false;
     }
 }
 
@@ -151,9 +152,8 @@ function arg_get_value($arg)
             return strtoupper($type).substr($arg, $pos_delim); #uppercase(FRAME) + @ + var_id
 
         default:
-            error_log("Invalid type in arg_get_value(): ".$arg."\n");
-            exit(23);
-    }
+            error("Invalid type in arg_get_value(): ".$arg, 23);
+        }
 }
 
 function add_arg($instruction, $order, $arg)
@@ -200,8 +200,7 @@ $options = getopt($opts_short, $opts_long);
 # Check for --help or -h
 if ( is_arg("help", $options) ){
     if ( is_arg("source", $options) ){
-        error_log("Help specified with another parameter\n");
-        exit(10);
+        error("Help specified with another parameter", 10);
     }
     else{
         echo($help);
@@ -214,8 +213,7 @@ $file_input;
 if ( is_arg("source", $options)){
     $file_input = fopen($options["source"],"r");
     if ($file_input == false){
-        error_log("Error with opening file: ".$options["source"]."\n");
-        exit(11);
+        error("Error with opening file: ".$options["source"], 11);
     }
 }
 else{
@@ -260,7 +258,9 @@ while ($line = fgets($file_input)){
         case "DEFVAR":
         case "POPS":
             check_argc($line, 2);
-            check_variable($line[1]);
+            if (! check_variable($line[1]) ){
+                error("Invalid argument - variable: ".$line[1], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1]);
             break;
 
@@ -270,7 +270,9 @@ while ($line = fgets($file_input)){
         case "EXIT":
         case "DPRINT":
             check_argc($line, 2);
-            check_symbol($line[1]);
+            if ( ! check_symbol($line[1])){
+                error("Invalid argument - symbol: ".$line[1], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1]);
             break;
 
@@ -279,7 +281,9 @@ while ($line = fgets($file_input)){
         case "LABEL":
         case "JUMP":
             check_argc($line, 2);
-            check_label($line[1]);
+            if ( !check_label($line[1])){
+                error("Invalid argument - label: ".$line[1], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1]);
             break;
 
@@ -290,16 +294,18 @@ while ($line = fgets($file_input)){
         case "TYPE":
         case "NOT":
             check_argc($line, 3);
-            check_variable($line[1]);
-            check_symbol($line[2]);
+            if ( ! (check_variable($line[1]) && check_symbol($line[2])) ){
+                error("Invalid arguments - variable, symbol: ".$line[1]." ".$line[2], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1], $line[2]);
             break;
 
         # <var> <type>
         case "READ":
             check_argc($line, 3);
-            check_variable($line[1]);
-            check_type($line[2]);
+            if (! (check_variable($line[1]) && check_type($line[2]))){
+                error("Invalid arguments - variable, type: ".$line[1]." ".$line[2], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1], $line[2]);
             break;
 
@@ -318,9 +324,9 @@ while ($line = fgets($file_input)){
         case "GETCHAR":
         case "SETCHAR":
             check_argc($line, 4);
-            check_variable($line[1]);
-            check_symbol($line[2]);
-            check_symbol($line[3]);
+            if (! (check_variable($line[1]) && check_symbol($line[2]) && check_symbol($line[3]))){
+                error("Invalid arguments - variable, symbol, symbol: ".$line[1]." ".$line[2]." ".$line[3], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1], $line[2], $line[3]);
             break;
 
@@ -328,15 +334,14 @@ while ($line = fgets($file_input)){
         case "JUMPIFEQ":
         case "JUMPIFNEQ":
             check_argc($line, 4);
-            check_label($line[1]);
-            check_symbol($line[2]);
-            check_symbol($line[3]);
+            if ( ! (check_label($line[1]) && check_symbol($line[2]) && check_symbol($line[3]))){
+                error("Invalid arguments - label, symbol, symbol :".$line[1]." ".$line[2]." ".$line[3], 23);
+            }
             add_instruction($xml, $inst_ord++, strtoupper($line[0]), $line[1], $line[2], $line[3]);
             break;
 
         default:
-            error_log("Invalid instruction opcode: ".$line[0]."\n");
-            exit(22);
+            error("Invalid instruction opcode: ".$line[0], 22);
     }
 }
 
