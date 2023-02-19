@@ -46,7 +46,7 @@ function check_variable($var)
     }
 
     $var_id = substr($var, $pos_delim+1);
-    if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$var_id)){
+    if ( !preg_match("/^[_,\-,$,&,%,*,!,?,a-z,A-Z][_,\-,$,&,%,*,!,?,a-z,A-Z,0-9]*$/",$var_id)){
         return false;
     }
 
@@ -55,7 +55,7 @@ function check_variable($var)
 
 function check_label($label)
 {
-    if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$label)){
+    if ( !preg_match("/^[_,\-,$,&,%,*,!,?,a-z,A-Z][_,\-,$,&,%,*,!,?,a-z,A-Z,0-9]*$/",$label)){
         return false;
     }
     else{
@@ -80,7 +80,7 @@ function check_symbol($symbol)
 
     switch ($type) {
         case "int":
-            if ( preg_match("/^(([1-9][0-9]*(_[0-9]+)*|0)|(0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*)|(0[oO]?[0-7]+(_[0-7]+)*)|(0[bB][01]+(_[01]+)*))$/", $value)){
+            if ( preg_match("/^(([+,-]{0,1}[1-9][0-9]*(_[0-9]+)*|0)|(0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*)|(0[oO]?[0-7]+(_[0-7]+)*)|(0[bB][01]+(_[01]+)*))$/", $value)){
                 return true;
             }
             break;
@@ -92,6 +92,18 @@ function check_symbol($symbol)
             break;
 
         case "string":
+            $str_lit = $value;
+            $offset = 0;
+            //Take all occurencies of "\" in string and check if it is an escape sequence or not
+            while (($bs_pos = strpos($str_lit, "\\", $offset)) !== false){
+                $esc_seq = substr($str_lit, $bs_pos, 4);
+                if (preg_match("/^\\\\\d{3}$/", $esc_seq)){
+                    $offset = $bs_pos+3;
+                }
+                else{
+                    return false;
+                }
+            }
             return true;
 
         case "nil":
@@ -129,11 +141,12 @@ function check_argc($line, $count)
 
 function replace_special_in_string($string)
 {
+    #TODO fix replacing
     # < = &lt
     # > = &gt
     # & = &amp
     # ...
-    return str_replace(array("<", ">","&"), array("&lt", "&gt", "&amp"), $string);
+    return htmlspecialchars($string, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_XML1);
 }
 
 function arg_get_type($arg)
@@ -175,19 +188,20 @@ function arg_get_value($arg)
     }
 
     $type = substr($arg, 0, $pos_delim);
+    $value = substr($arg, $pos_delim + 1);
+    $value = replace_special_in_string($value);
+
     switch (strtoupper($type)) {
         case "INT":
         case "BOOL":
         case "NIL":
-            return substr($arg, $pos_delim + 1);
-
         case "STRING":
-            return replace_special_in_string(substr($arg, $pos_delim+1));
+            return $value;
 
         case "GF":
         case "LF":
         case "TF":
-            return strtoupper($type).substr($arg, $pos_delim); #uppercase(FRAME) + @ + var_id
+            return strtoupper($type)."@".$value; #uppercase(FRAME) + @ + var_id
 
         default:
             error("Invalid type in arg_get_value(): ".$arg, 23);
@@ -273,6 +287,8 @@ while ($line = fgets($file_input)){
         continue;
     }
 
+    # Remove consecutive whitespaces
+    $line = preg_replace('/\s+/', ' ', $line);
     $line = explode(" ", trim($line));
 
     if (! $header_checked ){
