@@ -196,7 +196,7 @@ else{
 }
 
 # Create an xml which will contain the program
-$xml = new SimpleXMLElement("<program></program>");
+$xml = new SimpleXMLElement("<?xml version=\"1.0\" encoding=\"UTF-8\"?><program></program>");
 $xml->addAttribute("language", "IPPcode23");
 
 $instructions = array();
