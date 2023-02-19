@@ -65,8 +65,46 @@ function check_label($label)
 
 function check_symbol($symbol)
 {
-    #TODO implement
-    return true;
+    # symbol may be a variable
+    if (check_variable($symbol)){
+        return true;
+    }
+
+    $pos_delim = strpos($symbol, "@");
+    if ( ! $pos_delim){
+        return false;
+    }
+
+    $type = substr($symbol, 0, $pos_delim);
+    $value = substr($symbol, $pos_delim+1);
+
+    switch ($type) {
+        case "int":
+            if ( preg_match("/^(([1-9][0-9]*(_[0-9]+)*|0)|(0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*)|(0[oO]?[0-7]+(_[0-7]+)*)|(0[bB][01]+(_[01]+)*))$/", $value)){
+                return true;
+            }
+            break;
+
+        case "bool":
+            if (preg_match("/^((true)|(false))$/i", $value)){
+                return true;
+            }
+            break;
+
+        case "string":
+            return true;
+
+        case "nil":
+            if ( $value == "nil"){
+                return true;
+            }
+            break;
+
+        default:
+            return false;
+    }
+
+    return false;
 }
 
 function check_type($type)
