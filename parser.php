@@ -49,8 +49,15 @@ function check_symbol($symbol)
 
 function check_type($type)
 {
-    #TODO implement
-    return true;
+    switch ($type) {
+        case "int":
+        case "bool":
+        case "string":
+            return true;
+        default:
+            error_log("Invalid type: ".$type."\n");
+            exit (23);
+    }
 }
 
 function check_argc($line, $count)
