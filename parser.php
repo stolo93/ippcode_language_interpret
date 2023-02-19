@@ -54,7 +54,10 @@ function check_variable($var)
 
 function check_label($label)
 {
-    #TODO implement
+    if ( !preg_match("/^[ _, -, $, &, %, *, !, ?, a-z,A-Z][a-z,A-Z,0-9]*$/",$label)){
+        error_log("Invalid arugment - variable: ".$label."\n");
+        exit(23);
+    }
     return true;
 }
 
