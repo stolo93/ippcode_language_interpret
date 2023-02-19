@@ -4,7 +4,7 @@ ini_set('display_errors', 'stderr');
 
 function error($msg, $exit_code){
     error_log($msg."\n");
-    exit($exit_code);
+    exit(intval($exit_code));
 }
 
 function is_arg($name, $options_array)
