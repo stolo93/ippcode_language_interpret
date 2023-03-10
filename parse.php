@@ -1,22 +1,42 @@
 <?php
+/**
+ * @author Samuel Stolarik <xstola03@stud.fit.vutbr.cz>
+ * Parser for IPPcode23
+ */
+
 # Redirect error messages to stderr
 ini_set('display_errors', 'stderr');
 
+/**
+ * Logs $msg and exits the application with $exit_code
+ * @param string $msg
+ * @param int $exit_code
+ */
 function error($msg, $exit_code){
     error_log($msg."\n");
     exit(intval($exit_code));
 }
 
+/**
+ * Check if $name is in $options_array
+ * @param string $options_array
+ * @param string $options_array
+ * @return bool
+ */
 function is_arg($name, $options_array)
 {
     if(array_key_exists($name, $options_array) || array_key_exists($name[0], $options_array)){
         return true;
     }
-    else{
-        return false;
-    }
+
+    return false;
 }
 
+/**
+ * Remove comments from $string starting with $com_symbol
+ * @param string $string
+ * @param string $com_symbol
+ */
 function remove_comment(&$string, $com_symbol)
 {
     $pos = strpos($string, $com_symbol);
@@ -26,6 +46,11 @@ function remove_comment(&$string, $com_symbol)
     $string = substr($string,0, $pos);
 }
 
+/**
+ * Checks if $header is according to IPPcode23 specs
+ * @param string $header
+ * @return void
+ */
 function check_header($header)
 {
     if ( ! ($header === ".IPPcode23") ){
@@ -33,6 +58,11 @@ function check_header($header)
     }
 }
 
+/**
+ * Lexical analysis of variables
+ * @param string $var
+ * @return bool
+ */
 function check_variable($var)
 {
     $pos_delim = strpos($var, "@");
@@ -53,6 +83,11 @@ function check_variable($var)
     return true;
 }
 
+/**
+ * Lexical analysis of labels
+ * @param string $label
+ * @return bool
+ */
 function check_label($label)
 {
     if ( !preg_match("/^[_,\-,$,&,%,*,!,?,a-z,A-Z][_,\-,$,&,%,*,!,?,a-z,A-Z,0-9]*$/",$label)){
@@ -63,6 +98,11 @@ function check_label($label)
     }
 }
 
+/**
+ * Lexical analysis of symbols
+ * @param string $symbol
+ * @return bool
+ */
 function check_symbol($symbol)
 {
     # symbol may be a variable
@@ -119,6 +159,11 @@ function check_symbol($symbol)
     return false;
 }
 
+/**
+ * Lexical analysis of types
+ * @param string $type
+ * @return bool
+ */
 function check_type($type)
 {
     switch ($type) {
@@ -131,6 +176,12 @@ function check_type($type)
     }
 }
 
+/**
+ * Syntax analysis of number of paramters for given instruction
+ * @param array $line
+ * @param int $count
+ * @return void
+ */
 function check_argc($line, $count)
 {
     if (count($line) != $count){
@@ -139,9 +190,13 @@ function check_argc($line, $count)
     }
 }
 
+/**
+ * Replace special XML characters in $string
+ * @param string $string
+ * @return string
+ */
 function replace_special_in_string($string)
 {
-    #TODO fix replacing
     # < = &lt
     # > = &gt
     # & = &amp
@@ -149,6 +204,11 @@ function replace_special_in_string($string)
     return htmlspecialchars($string, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_XML1);
 }
 
+/**
+ * Parse type from argument
+ * @param string $arg
+ * @return string
+ */
 function arg_get_type($arg)
 {
     #Domain = {int, bool, string, nil, label, type, var}
@@ -175,6 +235,11 @@ function arg_get_type($arg)
     return $type;
 }
 
+/**
+ * Parse value from $arg
+ * @param string $arg
+ * @return mixed
+ */
 function arg_get_value($arg)
 {
     #for strings use replace_special_in_string()
@@ -208,11 +273,29 @@ function arg_get_value($arg)
         }
 }
 
+/**
+ * Add argument attribute to $instruction
+ * @param mixed $instruction
+ * @param int $order
+ * @param string $arg
+ * @return void
+ */
 function add_arg($instruction, $order, $arg)
 {
     $new_arg = $instruction->addChild(("arg".$order), arg_get_value($arg));
     $new_arg->addAttribute("type", arg_get_type($arg));
 }
+
+/**
+ * Add instruction element to the $xml
+ * @param mixed $xml
+ * @param int $order
+ * @param string $opcode
+ * @param mixed $arg1
+ * @param mixed $arg2
+ * @param mixed $arg3
+ * @return void
+ */
 function add_instruction($xml, $order, $opcode, $arg1=null, $arg2=null, $arg3=null)
 {
     $new_instruction = $xml->addChild("instruction");
@@ -237,8 +320,18 @@ function add_instruction($xml, $order, $opcode, $arg1=null, $arg2=null, $arg3=nu
 ########################################################
 ########### PROGRAM ENTRY POINT ########################
 
-#TODO write propper help message
-$help = "HELP";
+$help =
+"Source code analyser for IPPcode23
+Author: Samuel Stolarik, xstola03
+PHP version: 8.1
+parse.php analyses source code given either from standard input or from file specified with --source option
+and prints XML representation of the program to standard output. (See documentation for output format).
+
+Usage:
+php8.1 parse.php reads input from standard input
+--help\t-prints this help message
+--source input_file\t -reads source code from *input_file*
+";
 
 # Parse program parameters
 $opts_short = 'hs:';
