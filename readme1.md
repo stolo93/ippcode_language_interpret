@@ -4,7 +4,7 @@ Login: xstola03
 
 ## Usage
 
-The program parse.php expects a IPPcode23 source code and proceeds with lexical and syntactic analysis. 
+The program parse.php expects a IPPcode23 source code and proceeds with lexical and syntactic analysis.
 If the source program given is syntactically correct it will be printed to standard output in XML form as described bellow.
 
 To print help message run:
@@ -20,7 +20,7 @@ To read the source code from standard input
 
 ### Output XML description
 
-The final XML which is printed to standard output consists of a header and root element `program`, 
+The final XML which is printed to standard output consists of a header and root element `program`,
 which then aggregates each given instruction as a child element and uses element attributes to store
 instruction parameters.
 
