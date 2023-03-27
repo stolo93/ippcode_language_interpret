@@ -47,3 +47,27 @@ class Frame:
             return False
         else:
             return True
+
+
+class Program:
+    """
+    Class storing all data about currently interpreted program
+    """
+    def __init__(self, input_data: list = None):
+        self.pc = 0
+
+        if input_data is None:
+            self.input_valid = False
+            self.input_lines = []
+        else:
+            self.input_valid = True
+            self.input_lines = input_data
+        self.input_cur_line = 0
+
+        self.labels = {}
+
+        self.global_frame = Frame()
+        self.temporary_frame = Frame()
+        self.temporary_frame_valid = False
+
+        self.local_frames = []
