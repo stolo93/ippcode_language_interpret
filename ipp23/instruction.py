@@ -234,7 +234,7 @@ class Variable(Symbol):
         self.name = name
         self.frame = frame
 
-    def is_defined(self) -> bool:
+    def is_initialized(self) -> bool:
         """
         Get information, whether this variable was already initialized
         @return: bool
@@ -257,7 +257,7 @@ class Variable(Symbol):
         @raise Undefined var error in case the variable hasn't been assigned value before
         @return: value
         """
-        if self.is_defined():
+        if self.is_initialized():
             return self.value
         else:
             # TODO raise undefined var error
@@ -269,7 +269,7 @@ class Variable(Symbol):
         @raise Undefined var error in case the variable hasn't been assigned value before
         @return: DataType
         """
-        if self.is_defined():
+        if self.is_initialized():
             return self.value_type
         else:
             # TODO raise undefined var error
