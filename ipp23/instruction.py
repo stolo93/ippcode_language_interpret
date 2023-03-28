@@ -16,6 +16,7 @@ class ArgumentType(Enum):
     VAR = 'var'
     CONST_VALUE = 'const'
     LABEL = 'label'
+    TYPE = 'type'
 
 
 class DataType(Enum):
@@ -117,8 +118,23 @@ class Argument(ABC):
                     pass
 
                 arg_obj = Label(str(arg_value))
+
+            case ArgumentType.TYPE.value:
+                match arg_value.lower():
+                    case DataType.INT.value:
+                        arg_value = DataType.INT
+                    case DataType.BOOL.value:
+                        arg_value = DataType.BOOL
+                    case DataType.STRING.value:
+                        arg_value = DataType.STRING
+                    case default:
+                        # TODO raise incorrect type error
+                        arg_value = DataType.NIL
+
+                arg_obj = Type(arg_value)
+
             case default:
-                # TODO raise incorrect type
+                # TODO raise incorrect arg type error
                 arg_obj = ConstNil()
 
         return arg_obj
@@ -134,6 +150,18 @@ class Label(Argument):
 
     def __repr__(self):
         return self.arg_type.value + ':' + str(self.label_name)
+
+
+class Type(Argument):
+    """
+    Type argument
+    """
+    def __init__(self, type_name: DataType):
+        super().__init__(ArgumentType.TYPE)
+        self.type_name = type_name
+
+    def __repr__(self):
+        return self.arg_type.value + ':' + self.type_name.value
 
 
 class Symbol(Argument, ABC):
