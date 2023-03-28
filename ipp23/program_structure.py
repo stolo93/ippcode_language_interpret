@@ -5,6 +5,8 @@
 @date 2023-03-27
 """
 
+from ipp23.instruction import *
+
 
 class Frame:
     """
@@ -14,59 +16,118 @@ class Frame:
     def __init__(self):
         self.variables = {}
 
-    def define_variable(self, name: str):
-        if self.__is_defined(name):
-            # TODO Error: variable already defined
+    def define_variable(self, var: Variable):
+        """
+        Make entry for @p var in this frame
+        @raise If @p var already exists redefinition error will be raised
+        @param var: Variable
+        @return: void
+        """
+        if self.is_defined(var):
+            # TODO raise redefinition error
             pass
         else:
-            self.variables[name] = (None, None)
+            self.variables[var.name] = var
 
-    def set_variable(self, name: str, value, var_type: str):
-        if self.__is_defined(name):
-            self.variables[name] = (value, var_type)
-        else:
-            # TODO Error: undefined variable
-            pass
+    def set_variable(self, var: Variable, value, value_type: DataType):
+        """
+        Set variable value
+        @raise Undefined var error
+        @param var: Variable which should be set
+        @param value: New value
+        @param value_type: Type of value
+        @return: void
+        """
+        if not self.is_defined(var):
+            # TODO raise not declared error
+            return
+        self.variables[var.name].set_value(value, value_type)
 
-    def get_value(self, name: str):
-        if self.__is_defined(name):
-            return self.variables[name][0]
-        else:
-            # TODO Error: undefined variable
-            pass
+    def get_value(self, var: Variable):
+        """
+        Get value of @p var
+        @raise Undefined variable error
+        @param var: Variable
+        @return: Value or None in case of uninitialized variable
+        """
+        if not self.is_defined(var):
+            # TODO raise not declared error
+            return
+        return self.variables[var.name].get_value()
 
-    def get_type(self, name: str):
-        if self.__is_defined(name):
-            return self.variables[name][1]
-        else:
-            # TODO Error: undefined variable
-            pass
+    def get_type(self, var: Variable):
+        """
+        Get type of @p var
+        @raise Undefined variable error
+        @param var: Variable
+        @return: Type or None in case of uninitialized variable
+        """
+        if not self.is_defined(var):
+            # TODO raise not declared error
+            return
+        return self.variables[var.name].get_type()
 
-    def __is_defined(self, name: str):
-        if self.variables.get(name) is None:
+    def is_initialized(self, var: Variable) -> bool:
+        """
+        Is variable initialized, meaning it was already assigned value
+        @raise Undefined var error
+        @param var: Variable
+        @return: bool
+        """
+        if not self.is_defined(var):
+            # TODO raise undefined var error
             return False
-        else:
+
+        return self.variables[var.name].is_initialized()
+
+    def is_defined(self, var: Variable) -> bool:
+        """
+        Get information about existence of @p var
+        @param var: Variable
+        @return: bool
+        """
+        if not self.variables.get(var.name) is None:
             return True
+        else:
+            return False
+
+    def delete_var(self, var: Variable):
+        """
+        Delete @p var from frame
+        If variable does not exist, does nothing
+        @param var: Variable
+        @return: void
+        """
+        if self.is_defined(var):
+            self.variables.pop(var.name)
+
+    def clear(self):
+        """
+        Delete all variables
+        @return: void
+        """
+        self.variables.clear()
 
 
 class Program:
     """
     Class storing all data about currently interpreted program
     """
-    def __init__(self, input_data: list = None):
+    def __init__(self, input_buffer: list[str] = None):
         self.pc = 0
 
-        if input_data is None:
+        if input_buffer is None:
             self.input_valid = False
-            self.input_lines = []
+            self.lines_buffer = []
         else:
             self.input_valid = True
-            self.input_lines = input_data
+            self.lines_buffer = input_buffer
         self.input_cur_line = 0
 
         self.labels = {}
 
         self.global_frame = Frame()
+
         self.temporary_frame = Frame()
         self.temporary_frame_valid = False
 
