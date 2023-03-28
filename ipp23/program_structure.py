@@ -4,6 +4,8 @@
 @author Samuel Stolarik
 @date 2023-03-27
 """
+import io
+import sys
 
 from ipp23.instruction import *
 
@@ -113,22 +115,19 @@ class Program:
     """
     Class storing all data about currently interpreted program
     """
-    def __init__(self, input_buffer: list[str] = None):
+    def __init__(self, file_in: io.TextIOWrapper = sys.stdin):
+        # Program counter
         self.pc = 0
-
-        if input_buffer is None:
-            self.input_valid = False
-            self.lines_buffer = []
-        else:
-            self.input_valid = True
-            self.lines_buffer = input_buffer
-        self.input_cur_line = 0
-
+        # Input for program
+        self.file_in = file_in
+        # Labels
         self.labels = {}
-
+        # Global frame (initialized since the beginning)
         self.global_frame = Frame()
-
+        # Temporary frame (has to be created with)
         self.temporary_frame = Frame()
         self.temporary_frame_valid = False
-
-        self.local_frames = []
+        # Stack of local frame
+        self.local_frames: list[Frame] = []
+        # Data stack (stack of symbols)
+        self.data_stack: list[Symbol] = []
