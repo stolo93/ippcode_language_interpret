@@ -6,6 +6,7 @@
 """
 import io
 import sys
+import copy
 
 from ipp23.instruction import *
 
@@ -117,7 +118,7 @@ class Program:
     """
     def __init__(self, file_in: io.TextIOWrapper = sys.stdin):
         # Program counter
-        self.pc = 0
+        self.program_counter = 0
         # Input for program
         self.file_in = file_in
         # Labels
@@ -131,3 +132,180 @@ class Program:
         self.local_frames: list[Frame] = []
         # Data stack (stack of symbols)
         self.data_stack: list[Symbol] = []
+
+    def set_program_counter(self, new_pc: int) -> None:
+        """
+        Set program counter to @p new_pc
+        @raise Value error, if @p new_pc is a negative value
+        @param new_pc: New value
+        @return: None
+        """
+        if new_pc < 0:
+            # TODO raise value error
+            pass
+        self.program_counter = new_pc
+
+    def get_program_counter(self) -> int:
+        """
+        Get current value of program counter
+        @return: Current program value
+        """
+        return self.program_counter
+
+    def get_line(self) -> str:
+        """
+        Get one line from input to the interpreted program
+        @return: One line from input
+        """
+        return self.file_in.readline()
+
+    def create_label(self, label: Label, address: int) -> None:
+        """
+        Create label at address
+        @raise Value error if the label is already used
+        @param label
+        @param address
+        @return: None
+        """
+        if self.labels.get(label.label_name) is None:
+            self.labels[label.label_name] = address
+        else:
+            # TODO raise already used
+            pass
+
+    def get_label_address(self, label: Label) -> int:
+        """
+        Return address at which @p label is located
+        @raise Value error if label is not defined
+        @param label: Label
+        @return: Address
+        """
+        address = self.labels.get(label.label_name)
+        if address is None:
+            # TODO raise not defined error
+            pass
+
+        return address
+
+    def declare_variable(self, var: Variable) -> None:
+        """
+        Declare variable without defining the value
+        @raise Variable already defined
+        @param var: Variable
+        @return: None
+        """
+        frame = self.get_frame(var.get_frame())
+        # TODO try
+        frame.define_variable(var)
+
+    def set_variable(self, var: Variable, value, value_type: DataType) -> None:
+        """
+        Set value for variable
+        @raise Undefined variable error
+        @param var: Variable
+        @param value: New value for @p var
+        @param value_type: Data type of @p value
+        @return: None
+        """
+        # TODO try
+        frame = self.get_frame(var.get_frame())
+        frame.set_variable(var, value, value_type)
+
+    def get_variable_value(self, var: Variable):
+        """
+        Get variable value
+        @raise
+        @param var: Variable
+        @return: Value stored at @p var
+        """
+        # TODO try
+        frame = self.get_frame(var.get_frame())
+        return frame.get_value(var)
+
+    def get_variable_type(self, var: Variable) -> DataType:
+        """
+        Get variable data type
+        @raise
+        @param var: Variable
+        @return: DataType
+        """
+        frame = self.get_frame(var.get_frame())
+        return frame.get_type(var)
+
+    def del_variable(self, var: Variable) -> None:
+        """
+        Delete variable
+        If it does not exist, nothing happens
+        @param var: Variable
+        @return: None
+        """
+        frame = self.get_frame(var.get_frame())
+        frame.delete_var(var)
+
+    def create_frame(self) -> None:
+        """
+        Create new temporary frame
+        If temporary frame already exists it will be overwritten
+        @return:
+        """
+        self.temporary_frame.clear()
+        self.temporary_frame_valid = True
+
+    def push_frame(self) -> None:
+        """
+        Move temporary frame on top of local frames stack
+        @raise FrameError in case temporary frame does not exist
+        @return: None
+        """
+        if self.temporary_frame_valid:
+            self.local_frames.append(copy.deepcopy(self.temporary_frame))
+            self.temporary_frame_valid = False
+        else:
+            # TODO raise undefined frame error 55
+            pass
+
+    def pop_frame(self) -> None:
+        """
+        Move the top of local frames stack to temporary frame
+        @raise FrameError in case no local frame exists
+        @return: None
+        """
+        # No local frame
+        if not self.local_frames:
+            # TODO raise undefined local frame 55
+            pass
+        else:
+            self.temporary_frame = copy.deepcopy(self.local_frames.pop())
+            self.temporary_frame_valid = True
+
+    def get_frame(self, frame_type: FrameType) -> Frame:
+        """
+        Get the correct frame depending on the @p frame_type
+        Meaning, either the global frame, temporary frame or the top of local frames stack
+        @raise FrameError in case local or temporary frame should be returned but does not exist
+        @param frame_type: FrameType
+        @return: Frame
+        """
+        match frame_type:
+            case FrameType.GF:
+                frame = self.global_frame
+
+            case FrameType.LF:
+                # No local frame
+                if not self.local_frames:
+                    # TODO raise local frame not valid
+                    pass
+                else:
+                    frame = self.local_frames[len(self.local_frames)-1]
+
+            case FrameType.TF:
+                if self.temporary_frame_valid:
+                    frame = self.temporary_frame
+                else:
+                    # TODO raise temporary frame not valid
+                    pass
+
+            case default:
+                # TODO raise invalid frame type
+                frame = self.global_frame
+        return frame
