@@ -10,6 +10,7 @@ import xml.etree.ElementTree as etree
 
 from ipp23.instruction_factory import *
 from ipp23.instruction import *
+from ipp23.exceptions import *
 
 
 class Interpret:
@@ -22,26 +23,27 @@ class Interpret:
     def load(self, input_xml: list) -> None:
         """
         Load all instructions
+        @raise XMLError
         @param input_xml: list of xml lines
         @return None
         """
-        program_root = etree.fromstringlist(input_xml)
+        try:
+            program_root = etree.fromstringlist(input_xml)
+        except etree.ParseError:
+            raise XMLErrorIPP23('Error: XML parsing failed', ErrorType.ERR_XML_FORMAT)
+
         for instr in program_root:
             attributes = instr.attrib
 
             # Get opcode, order and correct instruction factory
             try:
                 opcode = attributes['opcode']
-                order = int(attributes['order'])
-            except KeyError as e:
-                print(f'Error: Missing attribute opcode or order in a instruction. {e}')
-                raise e
+                # Instruction indices start at 1, therefore I subtract 1 for better list indexing
+                order = int(attributes['order']) - 1
+            except KeyError:
+                raise XMLErrorIPP23('Error: Missing attributes in input XML', ErrorType.ERR_XML_STRUCT)
 
-            try:
-                factory = Interpret._get_instruction_factory(opcode)
-            except ValueError as e:
-                print(f'Error: Invalid opcode: {opcode}. {e}')
-                raise e
+            factory = Interpret._get_instruction_factory(opcode)
 
             # Get all instruction arguments
             args_dict = {}
@@ -57,7 +59,9 @@ class Interpret:
                 args.append(Argument.create_argument(arg))
             # Insert instruction
             self.instructions.append(factory.create_instruction(opcode, order, args))
+
         self.instructions.sort()
+        self._check_instructions()
 
     def execute(self):
         """
@@ -71,6 +75,7 @@ class Interpret:
     def _get_instruction_factory(opcode: str):
         """
         Parse instruction opcode and return correct factory for it
+        @raise ValueError
         @param opcode
         @return InstructionFactory Object
         """
@@ -147,3 +152,16 @@ class Interpret:
                 raise ValueError(f'No such instruction {opcode}')
         return factory
 
+    def _check_instructions(self) -> None:
+        """
+        Check if all instructions in self instructions have the correct order
+        Expects that instructions are already sorted
+        @raise XMLError
+        @return: None
+        """
+        if not self.instructions[0].order == 0:
+            raise XMLErrorIPP23('Error: Instruction order does not start correctly', ErrorType.ERR_XML_STRUCT)
+
+        for i in range(0, len(self.instructions)):
+            if self.instructions[i].order != i:
+                raise XMLErrorIPP23('Error: Invalid instruction order', ErrorType.ERR_XML_STRUCT)
