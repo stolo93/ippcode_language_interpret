@@ -9,81 +9,79 @@ import sys
 import copy
 
 from ipp23.instruction import *
+from ipp23.exceptions import *
 
 
 class Frame:
     """
     Local frame for variables
-    @todo error handling
     """
     def __init__(self):
         self.variables = {}
 
-    def define_variable(self, var: Variable):
+    def define_variable(self, var: Variable) -> None:
         """
         Make entry for @p var in this frame
-        @raise If @p var already exists redefinition error will be raised
+        @raise SemanticError
         @param var: Variable
-        @return: void
+        @return: None
         """
-        if self.is_defined(var):
-            # TODO raise redefinition error
-            pass
-        else:
-            self.variables[var.name] = var
+        if self.exists(var):
+            raise SemanticErrorIPP23('Error: Variable redefinition', ErrorType.ERR_SEMANTICS)
 
-    def set_variable(self, var: Variable, value, value_type: DataType):
+        self.variables[var.name] = var
+
+    def set_variable(self, var: Variable, value, value_type: DataType) -> None:
         """
         Set variable value
-        @raise Undefined var error
+        @raise RuntimeError
         @param var: Variable which should be set
         @param value: New value
         @param value_type: Type of value
-        @return: void
+        @return: None
         """
-        if not self.is_defined(var):
-            # TODO raise not declared error
-            return
+        if not self.exists(var):
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} does not exist', ErrorType.ERR_NO_EXIST_VAR)
+
         self.variables[var.name].set_value(value, value_type)
 
     def get_value(self, var: Variable):
         """
         Get value of @p var
-        @raise Undefined variable error
+        @raise RuntimeError
         @param var: Variable
-        @return: Value or None in case of uninitialized variable
+        @return: Value
         """
-        if not self.is_defined(var):
-            # TODO raise not declared error
-            return
+        if not self.is_initialized(var):
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get value', ErrorType.ERR_UNDEF_VAR)
+
         return self.variables[var.name].get_value()
 
     def get_type(self, var: Variable):
         """
         Get type of @p var
-        @raise Undefined variable error
+        @raise RuntimeError
         @param var: Variable
-        @return: Type or None in case of uninitialized variable
+        @return: Type
         """
-        if not self.is_defined(var):
-            # TODO raise not declared error
-            return
+        if not self.is_initialized(var):
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get type', ErrorType.ERR_UNDEF_VAR)
+
         return self.variables[var.name].get_type()
 
     def is_initialized(self, var: Variable) -> bool:
         """
         Is variable initialized, meaning it was already assigned value
-        @raise Undefined var error
+        @raise RuntimeError
         @param var: Variable
         @return: bool
         """
-        if not self.is_defined(var):
-            # TODO raise undefined var error
-            return False
+        if not self.exists(var):
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} does not exist', ErrorType.ERR_NO_EXIST_VAR)
 
         return self.variables[var.name].is_initialized()
 
-    def is_defined(self, var: Variable) -> bool:
+    def exists(self, var: Variable) -> bool:
         """
         Get information about existence of @p var
         @param var: Variable
@@ -94,20 +92,20 @@ class Frame:
         else:
             return False
 
-    def delete_var(self, var: Variable):
+    def delete_var(self, var: Variable) -> None:
         """
         Delete @p var from frame
         If variable does not exist, does nothing
         @param var: Variable
-        @return: void
+        @return: None
         """
-        if self.is_defined(var):
+        if self.exists(var):
             self.variables.pop(var.name)
 
-    def clear(self):
+    def clear(self) -> None:
         """
         Delete all variables
-        @return: void
+        @return: None
         """
         self.variables.clear()
 
@@ -136,13 +134,13 @@ class Program:
     def set_program_counter(self, new_pc: int) -> None:
         """
         Set program counter to @p new_pc
-        @raise Value error, if @p new_pc is a negative value
+        @raise SemanticError
         @param new_pc: New value
         @return: None
         """
         if new_pc < 0:
-            # TODO raise value error
-            pass
+            raise SemanticErrorIPP23(f'Error: Invalid program counter value {new_pc}', ErrorType.ERR_SEMANTICS)
+
         self.program_counter = new_pc
 
     def get_program_counter(self) -> int:
@@ -162,7 +160,7 @@ class Program:
     def create_label(self, label: Label, address: int) -> None:
         """
         Create label at address
-        @raise Value error if the label is already used
+        @raise SemanticError
         @param label
         @param address
         @return: None
@@ -170,62 +168,53 @@ class Program:
         if self.labels.get(label.label_name) is None:
             self.labels[label.label_name] = address
         else:
-            # TODO raise already used
-            pass
+            raise SemanticErrorIPP23(f'Error: Label {label.label_name} already used', ErrorType.ERR_SEMANTICS)
 
     def get_label_address(self, label: Label) -> int:
         """
         Return address at which @p label is located
-        @raise Value error if label is not defined
+        @raise SemanticError
         @param label: Label
         @return: Address
         """
         address = self.labels.get(label.label_name)
         if address is None:
-            # TODO raise not defined error
-            pass
+            raise SemanticErrorIPP23(f'Error: Label {label.label_name} does not exist', ErrorType.ERR_SEMANTICS)
 
         return address
 
     def declare_variable(self, var: Variable) -> None:
         """
         Declare variable without defining the value
-        @raise Variable already defined
         @param var: Variable
         @return: None
         """
         frame = self.get_frame(var.get_frame())
-        # TODO try
         frame.define_variable(var)
 
     def set_variable(self, var: Variable, value, value_type: DataType) -> None:
         """
         Set value for variable
-        @raise Undefined variable error
         @param var: Variable
         @param value: New value for @p var
         @param value_type: Data type of @p value
         @return: None
         """
-        # TODO try
         frame = self.get_frame(var.get_frame())
         frame.set_variable(var, value, value_type)
 
     def get_variable_value(self, var: Variable):
         """
         Get variable value
-        @raise
         @param var: Variable
         @return: Value stored at @p var
         """
-        # TODO try
         frame = self.get_frame(var.get_frame())
         return frame.get_value(var)
 
     def get_variable_type(self, var: Variable) -> DataType:
         """
         Get variable data type
-        @raise
         @param var: Variable
         @return: DataType
         """
@@ -246,7 +235,7 @@ class Program:
         """
         Create new temporary frame
         If temporary frame already exists it will be overwritten
-        @return:
+        @return: None
         """
         self.temporary_frame.clear()
         self.temporary_frame_valid = True
@@ -254,29 +243,27 @@ class Program:
     def push_frame(self) -> None:
         """
         Move temporary frame on top of local frames stack
-        @raise FrameError in case temporary frame does not exist
+        @raise RuntimeError
         @return: None
         """
-        if self.temporary_frame_valid:
-            self.local_frames.append(copy.deepcopy(self.temporary_frame))
-            self.temporary_frame_valid = False
-        else:
-            # TODO raise undefined frame error 55
-            pass
+        if not self.temporary_frame_valid:
+            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+
+        self.local_frames.append(copy.deepcopy(self.temporary_frame))
+        self.temporary_frame_valid = False
 
     def pop_frame(self) -> None:
         """
         Move the top of local frames stack to temporary frame
-        @raise FrameError in case no local frame exists
+        @raise RuntimeError
         @return: None
         """
         # No local frame
         if not self.local_frames:
-            # TODO raise undefined local frame 55
-            pass
-        else:
-            self.temporary_frame = copy.deepcopy(self.local_frames.pop())
-            self.temporary_frame_valid = True
+            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+
+        self.temporary_frame = copy.deepcopy(self.local_frames.pop())
+        self.temporary_frame_valid = True
 
     def get_frame(self, frame_type: FrameType) -> Frame:
         """
@@ -293,19 +280,17 @@ class Program:
             case FrameType.LF:
                 # No local frame
                 if not self.local_frames:
-                    # TODO raise local frame not valid
-                    pass
-                else:
-                    frame = self.local_frames[len(self.local_frames)-1]
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+
+                frame = self.local_frames[len(self.local_frames)-1]
 
             case FrameType.TF:
-                if self.temporary_frame_valid:
-                    frame = self.temporary_frame
-                else:
-                    # TODO raise temporary frame not valid
-                    pass
+                # Temporary frame does not exist
+                if not self.temporary_frame_valid:
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+
+                frame = self.temporary_frame
 
             case default:
-                # TODO raise invalid frame type
-                frame = self.global_frame
+                raise GenericErrorIPP23(f'Error: Incorrect frame type {frame_type}', ErrorType.ERR_SEMANTICS)
         return frame

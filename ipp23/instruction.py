@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import xml.etree.ElementTree as etree
 
+from ipp23.exceptions import *
+
 
 class ArgumentType(Enum):
     """
@@ -74,20 +76,12 @@ class Argument(ABC):
                 elif arg_value == 'false':
                     value = False
                 else:
-                    # TODO value error
-                    pass
+                    raise ValueError(f'Error: Incorrect value for type bool, {arg_value}')
 
                 arg_obj = ConstBool(value)
 
             case DataType.INT.value:
-                try:
-                    value = int(arg_value)
-                except ValueError as e:
-                    # TODO handle error
-                    pass
-                finally:
-                    value = 0
-
+                value = int(arg_value)
                 arg_obj = ConstInt(value)
 
             case DataType.STRING.value:
@@ -96,8 +90,7 @@ class Argument(ABC):
             case ArgumentType.VAR.value:
                 at_pos = arg_value.find('@')
                 if at_pos == -1:
-                    # TODO raise value error, missing frame delimeter @
-                    pass
+                    raise ValueError(f'Error: Incorrect variable {arg_value}')
 
                 match arg_value[:at_pos].upper():
                     case 'GF':
@@ -107,15 +100,14 @@ class Argument(ABC):
                     case 'LF':
                         frame = FrameType.LF
                     case default:
-                        # TODO raise value error
-                        frame = FrameType.GF
+                        ValueError(f'Error: Incorrect frame type {arg_value}')
+                        return
 
                 arg_obj = Variable(arg_value[at_pos+1:], frame)
 
             case ArgumentType.LABEL.value:
                 if arg_value == '':
-                    # TODO raise value error
-                    pass
+                    raise ValueError(f'Error: Empty label name')
 
                 arg_obj = Label(str(arg_value))
 
@@ -128,14 +120,12 @@ class Argument(ABC):
                     case DataType.STRING.value:
                         arg_value = DataType.STRING
                     case default:
-                        # TODO raise incorrect type error
-                        arg_value = DataType.NIL
+                        raise ValueError(f'Error: Incorrect type name, {arg_value}')
 
                 arg_obj = Type(arg_value)
 
             case default:
-                # TODO raise incorrect arg type error
-                arg_obj = ConstNil()
+                raise ValueError(f'Error: Incorrect argument type error, {arg_type}')
 
         return arg_obj
 
@@ -257,11 +247,10 @@ class Variable(Symbol):
         @raise Undefined var error in case the variable hasn't been assigned value before
         @return: value
         """
-        if self.is_initialized():
-            return self.value
-        else:
-            # TODO raise undefined var error
-            pass
+        if not self.is_initialized():
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access value', ErrorType.ERR_UNDEF_VAR)
+
+        return self.value
 
     def get_value_type(self) -> DataType:
         """
@@ -269,11 +258,10 @@ class Variable(Symbol):
         @raise Undefined var error in case the variable hasn't been assigned value before
         @return: DataType
         """
-        if self.is_initialized():
-            return self.value_type
-        else:
-            # TODO raise undefined var error
-            pass
+        if not self.is_initialized():
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access type', ErrorType.ERR_UNDEF_VAR)
+
+        return self.value_type
 
     def get_frame(self) -> FrameType:
         """
