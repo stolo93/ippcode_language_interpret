@@ -1,6 +1,6 @@
 """!
 @package ipp23
-@file program_structure.py
+@file program.py
 @author Samuel Stolarik
 @date 2023-03-27
 """
@@ -8,106 +8,10 @@ import io
 import sys
 import copy
 
-from ipp23.instruction import *
-from ipp23.exceptions import *
-
-
-class Frame:
-    """
-    Local frame for variables
-    """
-    def __init__(self):
-        self.variables = {}
-
-    def define_variable(self, var: Variable) -> None:
-        """
-        Make entry for @p var in this frame
-        @raise SemanticError
-        @param var: Variable
-        @return: None
-        """
-        if self.exists(var):
-            raise SemanticErrorIPP23('Error: Variable redefinition', ErrorType.ERR_SEMANTICS)
-
-        self.variables[var.name] = var
-
-    def set_variable(self, var: Variable, value, value_type: DataType) -> None:
-        """
-        Set variable value
-        @raise RuntimeError
-        @param var: Variable which should be set
-        @param value: New value
-        @param value_type: Type of value
-        @return: None
-        """
-        if not self.exists(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} does not exist', ErrorType.ERR_NO_EXIST_VAR)
-
-        self.variables[var.name].set_value(value, value_type)
-
-    def get_value(self, var: Variable):
-        """
-        Get value of @p var
-        @raise RuntimeError
-        @param var: Variable
-        @return: Value
-        """
-        if not self.is_initialized(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get value', ErrorType.ERR_UNDEF_VAR)
-
-        return self.variables[var.name].get_value()
-
-    def get_type(self, var: Variable):
-        """
-        Get type of @p var
-        @raise RuntimeError
-        @param var: Variable
-        @return: Type
-        """
-        if not self.is_initialized(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get type', ErrorType.ERR_UNDEF_VAR)
-
-        return self.variables[var.name].get_type()
-
-    def is_initialized(self, var: Variable) -> bool:
-        """
-        Is variable initialized, meaning it was already assigned value
-        @raise RuntimeError
-        @param var: Variable
-        @return: bool
-        """
-        if not self.exists(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} does not exist', ErrorType.ERR_NO_EXIST_VAR)
-
-        return self.variables[var.name].is_initialized()
-
-    def exists(self, var: Variable) -> bool:
-        """
-        Get information about existence of @p var
-        @param var: Variable
-        @return: bool
-        """
-        if not self.variables.get(var.name) is None:
-            return True
-        else:
-            return False
-
-    def delete_var(self, var: Variable) -> None:
-        """
-        Delete @p var from frame
-        If variable does not exist, does nothing
-        @param var: Variable
-        @return: None
-        """
-        if self.exists(var):
-            self.variables.pop(var.name)
-
-    def clear(self) -> None:
-        """
-        Delete all variables
-        @return: None
-        """
-        self.variables.clear()
+from .exceptions import RuntimeErrorIPP23, SemanticErrorIPP23, GenericErrorIPP23, ErrorType
+from .frame import Frame
+from .type_enums import DataType, FrameType
+from .argument import Symbol, Label, Variable
 
 
 class Program:
@@ -116,22 +20,31 @@ class Program:
     """
     def __init__(self, file_in: io.TextIOBase = sys.stdin):
         # Program counter
-        self.program_counter = 0
+        self._program_counter = 0
         # Input for program
-        self.file_in = file_in
+        self._file_in = file_in
         # Labels
-        self.labels = {}
+        self._labels = {}
         # Global frame (initialized since the beginning)
-        self.global_frame = Frame()
+        self._global_frame = Frame()
         # Temporary frame (has to be created with)
-        self.temporary_frame = Frame()
-        self.temporary_frame_valid = False
+        self._temporary_frame = Frame()
+        self._temporary_frame_valid = False
         # Stack of local frame
-        self.local_frames: list[Frame] = []
+        self._local_frames: list[Frame] = []
         # Data stack (stack of symbols)
-        self.data_stack: list[Symbol] = []
+        self._data_stack: list[Symbol] = []
 
-    def set_program_counter(self, new_pc: int) -> None:
+    @property
+    def program_counter(self) -> int:
+        """
+        Get current value of program counter
+        @return: Current program value
+        """
+        return self._program_counter
+
+    @program_counter.setter
+    def program_counter(self, new_pc: int) -> None:
         """
         Set program counter to @p new_pc
         @raise SemanticError
@@ -141,21 +54,14 @@ class Program:
         if new_pc < 0:
             raise SemanticErrorIPP23(f'Error: Invalid program counter value {new_pc}', ErrorType.ERR_SEMANTICS)
 
-        self.program_counter = new_pc
-
-    def get_program_counter(self) -> int:
-        """
-        Get current value of program counter
-        @return: Current program value
-        """
-        return self.program_counter
+        self._program_counter = new_pc
 
     def get_line(self) -> str:
         """
         Get one line from input to the interpreted program
         @return: One line from input
         """
-        return self.file_in.readline()
+        return self._file_in.readline()
 
     def create_label(self, label: Label, address: int) -> None:
         """
@@ -165,8 +71,8 @@ class Program:
         @param address
         @return: None
         """
-        if self.labels.get(label.label_name) is None:
-            self.labels[label.label_name] = address
+        if self._labels.get(label.label_name) is None:
+            self._labels[label.label_name] = address
         else:
             raise SemanticErrorIPP23(f'Error: Label {label.label_name} already used', ErrorType.ERR_SEMANTICS)
 
@@ -177,7 +83,7 @@ class Program:
         @param label: Label
         @return: Address
         """
-        address = self.labels.get(label.label_name)
+        address = self._labels.get(label.label_name)
         if address is None:
             raise SemanticErrorIPP23(f'Error: Label {label.label_name} does not exist', ErrorType.ERR_SEMANTICS)
 
@@ -237,8 +143,8 @@ class Program:
         If temporary frame already exists it will be overwritten
         @return: None
         """
-        self.temporary_frame.clear()
-        self.temporary_frame_valid = True
+        self._temporary_frame.clear()
+        self._temporary_frame_valid = True
 
     def push_frame(self) -> None:
         """
@@ -246,11 +152,11 @@ class Program:
         @raise RuntimeError
         @return: None
         """
-        if not self.temporary_frame_valid:
+        if not self._temporary_frame_valid:
             raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
 
-        self.local_frames.append(copy.deepcopy(self.temporary_frame))
-        self.temporary_frame_valid = False
+        self._local_frames.append(copy.deepcopy(self._temporary_frame))
+        self._temporary_frame_valid = False
 
     def pop_frame(self) -> None:
         """
@@ -259,11 +165,11 @@ class Program:
         @return: None
         """
         # No local frame
-        if not self.local_frames:
+        if not self._local_frames:
             raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
 
-        self.temporary_frame = copy.deepcopy(self.local_frames.pop())
-        self.temporary_frame_valid = True
+        self._temporary_frame = copy.deepcopy(self._local_frames.pop())
+        self._temporary_frame_valid = True
 
     def get_frame(self, frame_type: FrameType) -> Frame:
         """
@@ -275,22 +181,41 @@ class Program:
         """
         match frame_type:
             case FrameType.GF:
-                frame = self.global_frame
+                frame = self._global_frame
 
             case FrameType.LF:
                 # No local frame
-                if not self.local_frames:
+                if not self._local_frames:
                     raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
 
-                frame = self.local_frames[len(self.local_frames)-1]
+                frame = self._local_frames[len(self._local_frames) - 1]
 
             case FrameType.TF:
                 # Temporary frame does not exist
-                if not self.temporary_frame_valid:
+                if not self._temporary_frame_valid:
                     raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
 
-                frame = self.temporary_frame
+                frame = self._temporary_frame
 
-            case default:
+            case _:
                 raise GenericErrorIPP23(f'Error: Incorrect frame type {frame_type}', ErrorType.ERR_SEMANTICS)
         return frame
+
+    def __repr__(self):
+        program_counter = f'Program counter: {self.program_counter}\n'
+        labels = 'Labels:\n' + str(self._labels) + '\n'
+        global_frame = 'Global frame:\n' + str(self._global_frame) + '\n'
+        temporary_frame = 'Temporary frame:\n'
+        if self._temporary_frame_valid:
+            temporary_frame += str(self._temporary_frame)
+        temporary_frame += '\n'
+
+        local_frames = 'Local frames: \n'
+        for frame, i in enumerate(self._local_frames):
+            local_frames += f'Frame {i}:\n' + str(frame) + '\n'
+
+        data_stack = 'Data stack: \n'
+        for data in self._data_stack:
+            data_stack += str(data) + '\n'
+
+        return program_counter + labels + global_frame + temporary_frame + local_frames + data_stack + '\n'
