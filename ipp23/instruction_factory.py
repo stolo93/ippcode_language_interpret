@@ -5,13 +5,13 @@
 @date 2023-03-24
 """
 
-from ipp23.instruction import *
-from abc import ABC, abstractmethod
-import typing
+import abc
+
+import ipp23.instruction as instr
 
 
-class InstructionFactory(ABC):
-    @abstractmethod
+class InstructionFactory(abc.ABC):
+    @abc.abstractmethod
     def create_instruction(self, opcode: str, order: int, args: list):
         """
         Create instrution and validate args
@@ -22,7 +22,7 @@ class InstructionFactory(ABC):
         """
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _validate_args(self, args: list):
         """
         Perform static validation of arguments given to the instruction
@@ -31,7 +31,7 @@ class InstructionFactory(ABC):
         """
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _validate_opcode(self, opcode: str):
         """
         Validate opcode given to the instruction
@@ -47,7 +47,7 @@ class MoveInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return MoveInstruction(opcode, order, args)
+        return instr.MoveInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -56,11 +56,11 @@ class MoveInstructionFactory(InstructionFactory):
         pass
 
 
-class CreteFrameInstructionFactory(InstructionFactory):
+class CreateFrameInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return CreteFrameInstruction(opcode, order, args)
+        return instr.CreateFrameInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -73,7 +73,7 @@ class PushFrameInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return PushFrameInstruction(opcode, order, args)
+        return instr.PushFrameInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -86,7 +86,7 @@ class PopFrameInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return PopsInstruction(opcode, order, args)
+        return instr.PopFrameInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -99,7 +99,7 @@ class DefVarInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return DefVarInstruction(opcode, order, args)
+        return instr.DefVarInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -112,7 +112,7 @@ class Int2CharInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return Int2CharInstruction(opcode, order, args)
+        return instr.Int2CharInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -125,7 +125,7 @@ class Stri2IntInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return Stri2IntInstruction(opcode, order, args)
+        return instr.Stri2IntInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -138,7 +138,7 @@ class TypeInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return TypeInstruction(opcode, order, args)
+        return instr.TypeInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -153,7 +153,7 @@ class CallInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return CallInstruction(opcode, order, args)
+        return instr.CallInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -166,7 +166,7 @@ class ReturnInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return ReturnInstruction(opcode, order, args)
+        return instr.ReturnInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -179,7 +179,7 @@ class LabelInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return LabelInstruction(opcode, order, args)
+        return instr.LabelInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -192,7 +192,7 @@ class JumpInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return JumpInstruction(opcode, order, args)
+        return instr.JumpInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -205,7 +205,7 @@ class JumpIfEqInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return JumpIfEqInstruction(opcode, order, args)
+        return instr.JumpIfEqInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -218,7 +218,7 @@ class JumpIfNeqInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return JumpIfNeqInstruction(opcode, order, args)
+        return instr.JumpIfNeqInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -231,7 +231,7 @@ class ExitInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return ExitInstruction(opcode, order, args)
+        return instr.ExitInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -246,7 +246,7 @@ class ConcatInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return ConcatInstruction(opcode, order, args)
+        return instr.ConcatInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -259,7 +259,7 @@ class StrLenInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return StrLenInstruction(opcode, order, args)
+        return instr.StrLenInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -272,7 +272,7 @@ class GetCharInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return GetCharInstruction(opcode, order, args)
+        return instr.GetCharInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -285,7 +285,7 @@ class SetCharInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return SetCharInstruction(opcode, order, args)
+        return instr.SetCharInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -300,7 +300,7 @@ class AddInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return AddInstruction(opcode, order, args)
+        return instr.AddInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -313,7 +313,7 @@ class SubInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return SubInstruction(opcode, order, args)
+        return instr.SubInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -326,7 +326,7 @@ class IdivInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return IdivInstruction(opcode, order, args)
+        return instr.IdivInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -341,7 +341,7 @@ class LtInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return LtInstruction(opcode, order, args)
+        return instr.LtInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -354,7 +354,7 @@ class GtInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return GtInstruction(opcode, order, args)
+        return instr.GtInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -367,7 +367,7 @@ class EqInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return EqInstruction(opcode, order, args)
+        return instr.EqInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -382,7 +382,7 @@ class AndInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return AndInstruction(opcode, order, args)
+        return instr.AndInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -395,7 +395,7 @@ class OrInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return OrInstruction(opcode, order, args)
+        return instr.OrInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -408,7 +408,7 @@ class NotInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return NotInstruction(opcode, order, args)
+        return instr.NotInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -423,7 +423,7 @@ class PushsInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return PushsInstruction(opcode, order, args)
+        return instr.PushsInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -436,7 +436,7 @@ class PopsInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return PopsInstruction(opcode, order, args)
+        return instr.PopsInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -451,7 +451,7 @@ class ReadInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return ReadInstruction(opcode, order, args)
+        return instr.ReadInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -464,7 +464,7 @@ class WriteInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return WriteInstruction(opcode, order, args)
+        return instr.WriteInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -477,7 +477,7 @@ class DprintInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return DprintInstruction(opcode, order, args)
+        return instr.DprintInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
@@ -490,7 +490,7 @@ class BreakInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return DprintInstruction(opcode, order, args)
+        return instr.DprintInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass

@@ -4,10 +4,10 @@
 @author Samuel Stolarik
 @date 2023-04-01
 """
-from enum import Enum
+import enum
 
 
-class ErrorType(Enum):
+class ErrorType(enum.Enum):
     ERR_CLI_ARGS = 10
     ERR_INP_FILE = 11
     ERR_OUT_FILE = 12

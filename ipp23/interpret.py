@@ -5,15 +5,16 @@
 @date 2023-03-24
 """
 
-import typing
-import xml.etree.ElementTree as etree
+import xml.etree.ElementTree as Etree
 import io
 import sys
+import typing
 
-from ipp23.instruction_factory import *
-from ipp23.instruction import *
-from ipp23.exceptions import *
-from ipp23.program_structure import *
+import ipp23.instruction_factory as isf
+from .exceptions import XMLErrorIPP23, ErrorType
+from .program import Program
+from .argument import Argument
+from .instruction import Instruction
 
 
 class Interpret:
@@ -21,7 +22,7 @@ class Interpret:
     IPPcode23 intepret
     """
     def __init__(self):
-        self.instructions = []
+        self.instructions: typing.List[Instruction] = []
         self.program_state: Program = None
 
     def load(self, input_xml: io.TextIOBase = sys.stdin) -> None:
@@ -32,8 +33,8 @@ class Interpret:
         @return None
         """
         try:
-            xml = etree.parse(input_xml)
-        except etree.ParseError:
+            xml = Etree.parse(input_xml)
+        except Etree.ParseError:
             raise XMLErrorIPP23('Error: XML parsing failed', ErrorType.ERR_XML_FORMAT)
 
         program_root = xml.getroot()
@@ -77,11 +78,11 @@ class Interpret:
         @return: None
         """
         program_length = len(self.instructions)
-        program_counter = self.program_state.get_program_counter()
+        program_counter = self.program_state.program_counter
 
         while program_counter < program_length:
-            self.instructions[program_counter].execute()
-            program_counter = self.program_state.get_program_counter()
+            self.instructions[program_counter].execute(self.program_state)
+            program_counter = self.program_state.program_counter
 
     @staticmethod
     def _get_instruction_factory(opcode: str):
@@ -93,74 +94,74 @@ class Interpret:
         """
         match opcode.upper():
             case 'MOVE':
-                factory = MoveInstructionFactory()
+                factory = isf.MoveInstructionFactory()
             case 'CREATEFRAME':
-                factory = CreteFrameInstructionFactory()
+                factory = isf.CreateFrameInstructionFactory()
             case 'PUSHFRAME':
-                factory = PushFrameInstructionFactory()
+                factory = isf.PushFrameInstructionFactory()
             case 'POPFRAME':
-                factory = PopFrameInstructionFactory()
+                factory = isf.PopFrameInstructionFactory()
             case 'DEFVAR':
-                factory = DefVarInstructionFactory()
+                factory = isf.DefVarInstructionFactory()
             case 'INT2CHAR':
-                factory = Int2CharInstructionFactory()
+                factory = isf.Int2CharInstructionFactory()
             case 'STRI2INT':
-                factory = Stri2IntInstructionFactory()
+                factory = isf.Stri2IntInstructionFactory()
             case 'TYPE':
-                factory = TypeInstructionFactory()
+                factory = isf.TypeInstructionFactory()
             case 'CALL':
-                factory = CallInstructionFactory()
+                factory = isf.CallInstructionFactory()
             case 'RETURN':
-                factory = ReturnInstructionFactory()
+                factory = isf.ReturnInstructionFactory()
             case 'LABEL':
-                factory = LabelInstructionFactory()
+                factory = isf.LabelInstructionFactory()
             case 'JUMP':
-                factory = JumpInstructionFactory()
+                factory = isf.JumpInstructionFactory()
             case 'JUMPIFEQ':
-                factory = JumpIfEqInstructionFactory()
+                factory = isf.JumpIfEqInstructionFactory()
             case 'JUMPIFNEQ':
-                factory = JumpIfNeqInstructionFactory()
+                factory = isf.JumpIfNeqInstructionFactory()
             case 'EXIT':
-                factory = ExitInstructionFactory()
+                factory = isf.ExitInstructionFactory()
             case 'CONCAT':
-                factory = ConcatInstructionFactory()
+                factory = isf.ConcatInstructionFactory()
             case 'STRLEN':
-                factory = StrLenInstructionFactory()
+                factory = isf.StrLenInstructionFactory()
             case 'GETCHAR':
-                factory = GetCharInstructionFactory()
+                factory = isf.GetCharInstructionFactory()
             case 'SETCHAR':
-                factory = SetCharInstructionFactory()
+                factory = isf.SetCharInstructionFactory()
             case 'ADD':
-                factory = AddInstructionFactory()
+                factory = isf.AddInstructionFactory()
             case 'SUB':
-                factory = SubInstructionFactory()
+                factory = isf.SubInstructionFactory()
             case 'IDIV':
-                factory = IdivInstructionFactory()
+                factory = isf.IdivInstructionFactory()
             case 'LT':
-                factory = LtInstructionFactory()
+                factory = isf.LtInstructionFactory()
             case 'GT':
-                factory = GtInstructionFactory()
+                factory = isf.GtInstructionFactory()
             case 'EQ':
-                factory = EqInstructionFactory()
+                factory = isf.EqInstructionFactory()
             case 'AND':
-                factory = AndInstructionFactory()
+                factory = isf.AndInstructionFactory()
             case 'OR':
-                factory = OrInstructionFactory()
+                factory = isf.OrInstructionFactory()
             case 'NOT':
-                factory = NotInstructionFactory()
+                factory = isf.NotInstructionFactory()
             case 'PUSHS':
-                factory = PushsInstructionFactory()
+                factory = isf.PushsInstructionFactory()
             case 'POPS':
-                factory = PopsInstructionFactory()
+                factory = isf.PopsInstructionFactory()
             case 'READ':
-                factory = ReadInstructionFactory()
+                factory = isf.ReadInstructionFactory()
             case 'WRITE':
-                factory = WriteInstructionFactory()
+                factory = isf.WriteInstructionFactory()
             case 'DPRINT':
-                factory = DprintInstructionFactory()
+                factory = isf.DprintInstructionFactory()
             case 'BREAK':
-                factory = BreakInstructionFactory()
-            case default:
+                factory = isf.BreakInstructionFactory()
+            case _:
                 raise ValueError(f'No such instruction {opcode}')
         return factory
 
