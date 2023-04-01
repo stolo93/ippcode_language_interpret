@@ -7,10 +7,13 @@
 
 import typing
 import xml.etree.ElementTree as etree
+import io
+import sys
 
 from ipp23.instruction_factory import *
 from ipp23.instruction import *
 from ipp23.exceptions import *
+from ipp23.program_structure import *
 
 
 class Interpret:
@@ -19,8 +22,9 @@ class Interpret:
     """
     def __init__(self):
         self.instructions = []
+        self.program_state: Program = None
 
-    def load(self, input_xml: list) -> None:
+    def load(self, input_xml: io.TextIOBase = sys.stdin) -> None:
         """
         Load all instructions
         @raise XMLError
@@ -28,10 +32,11 @@ class Interpret:
         @return None
         """
         try:
-            program_root = etree.fromstringlist(input_xml)
+            xml = etree.parse(input_xml)
         except etree.ParseError:
             raise XMLErrorIPP23('Error: XML parsing failed', ErrorType.ERR_XML_FORMAT)
 
+        program_root = xml.getroot()
         for instr in program_root:
             attributes = instr.attrib
 
@@ -63,13 +68,20 @@ class Interpret:
         self.instructions.sort()
         self._check_instructions()
 
-    def execute(self):
+    def initialize(self, program_input: io.TextIOBase = sys.stdin):
+        self.program_state = Program(program_input)
+
+    def execute(self) -> None:
         """
-        Execute all instructions
-        @return: void
+        Execute instructions
+        @return: None
         """
-        for instruction in self.instructions:
-            print(instruction)
+        program_length = len(self.instructions)
+        program_counter = self.program_state.get_program_counter()
+
+        while program_counter < program_length:
+            self.instructions[program_counter].execute()
+            program_counter = self.program_state.get_program_counter()
 
     @staticmethod
     def _get_instruction_factory(opcode: str):

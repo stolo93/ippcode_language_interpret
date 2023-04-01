@@ -114,7 +114,7 @@ class Program:
     """
     Class storing all data about currently interpreted program
     """
-    def __init__(self, file_in: io.TextIOWrapper = sys.stdin):
+    def __init__(self, file_in: io.TextIOBase = sys.stdin):
         # Program counter
         self.program_counter = 0
         # Input for program
