@@ -137,6 +137,15 @@ class Program:
         frame = self.get_frame(var.get_frame())
         frame.delete_var(var)
 
+    def is_variable_initialized(self, var: Variable) -> bool:
+        """
+        Get information whether a variable is initialized
+        @param var: Variable
+        @return: bool
+        """
+        frame = self.get_frame(var.get_frame())
+        return frame.is_initialized(var)
+
     def create_frame(self) -> None:
         """
         Create new temporary frame
