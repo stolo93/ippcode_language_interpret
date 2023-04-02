@@ -73,9 +73,15 @@ class Program:
         @param address
         @return: None
         """
-        if self._labels.get(label.label_name) is None:
+        stored_address = self._labels.get(label.label_name)
+        if stored_address is None:
+            # Label does not exist, create it
             self._labels[label.label_name] = address
+        elif stored_address == address:
+            # Stored address is the same as new address
+            return
         else:
+            # Trying to add same label with different address
             raise SemanticErrorIPP23(f'Error: Label {label.label_name} already used', ErrorType.ERR_SEMANTICS)
 
     def get_label_address(self, label: Label) -> int:
@@ -250,6 +256,17 @@ class Program:
         if address < 0:
             raise RuntimeErrorIPP23(f'Error: Invalid address: {address}', ErrorType.ERR_SEMANTICS)
         self._call_stack.append(address)
+
+    @property
+    def data_stack(self) -> Symbol:
+        if not self._data_stack:
+            raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_UNDEF_VAR)
+        return self._data_stack.pop()
+
+    @data_stack.setter
+    def data_stack(self, symbol: Symbol) -> None:
+        self._data_stack.append(symbol)
+
 
     def __repr__(self):
         program_counter = f'Program counter: {self.program_counter}\n'

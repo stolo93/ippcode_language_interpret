@@ -45,3 +45,9 @@ class XMLErrorIPP23(Exception):
     def __init__(self, message: str, error_type: ErrorType):
         super().__init__(message)
         self.exit_code = error_type.value
+
+
+class ExitProgramException(Exception):
+    def __init__(self, message: str, exit_code: int):
+        super().__init__(message)
+        self.exit_code = exit_code
