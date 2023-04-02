@@ -10,7 +10,7 @@ import copy
 
 from .exceptions import RuntimeErrorIPP23, SemanticErrorIPP23, GenericErrorIPP23, ErrorType
 from .frame import Frame
-from .type_enums import DataType, FrameType
+from .type_enums import DataType, FrameType, ArgumentType
 from .argument import Symbol, Label, Variable
 
 
@@ -111,7 +111,7 @@ class Program:
         frame = self.get_frame(var.get_frame())
         frame.set_variable(var, value, value_type)
 
-    def get_variable_value(self, var: Variable):
+    def _get_variable_value(self, var: Variable):
         """
         Get variable value
         @param var: Variable
@@ -120,7 +120,7 @@ class Program:
         frame = self.get_frame(var.get_frame())
         return frame.get_value(var)
 
-    def get_variable_type(self, var: Variable) -> DataType:
+    def _get_variable_type(self, var: Variable) -> DataType:
         """
         Get variable data type
         @param var: Variable
@@ -147,6 +147,22 @@ class Program:
         """
         frame = self.get_frame(var.get_frame())
         return frame.is_initialized(var)
+
+    def get_symbol_value(self, symbol: Symbol):
+        if symbol.get_arg_type() == ArgumentType.VAR:
+            # Variable
+            return self._get_variable_value(symbol)
+        else:
+            # Constant
+            return symbol.get_value()
+
+    def get_symbol_type(self, symbol: Symbol):
+        if symbol.get_arg_type() == ArgumentType.VAR:
+            # Variable
+            return self._get_variable_type(symbol)
+        else:
+            # Constant
+            return symbol.get_type()
 
     def create_frame(self) -> None:
         """
