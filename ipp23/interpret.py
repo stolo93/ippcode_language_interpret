@@ -77,9 +77,19 @@ class Interpret:
         Execute instructions
         @return: None
         """
+        self.program_state.program_counter = 0
+        # Create labels
+        for instruction in self.instructions:
+            if instruction.opcode.upper() == 'LABEL':
+                # Label instruction increments program counter
+                instruction.execute(self.program_state)
+            else:
+                self.program_state.program_counter += 1
+
+        # Execute all instructions normally
+        self.program_state.program_counter = 0
         program_length = len(self.instructions)
         program_counter = self.program_state.program_counter
-
         while program_counter < program_length:
             self.instructions[program_counter].execute(self.program_state)
             program_counter = self.program_state.program_counter
@@ -135,6 +145,8 @@ class Interpret:
                 factory = isf.AddInstructionFactory()
             case 'SUB':
                 factory = isf.SubInstructionFactory()
+            case 'MUL':
+                factory = isf.MulInstructionFactory()
             case 'IDIV':
                 factory = isf.IdivInstructionFactory()
             case 'LT':

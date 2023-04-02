@@ -322,6 +322,19 @@ class SubInstructionFactory(InstructionFactory):
         pass
 
 
+class MulInstructionFactory(InstructionFactory):
+    def create_instruction(self, opcode: str, order: int, args: list):
+        self._validate_opcode(opcode)
+        self._validate_args(args)
+        return instr.MulInstruction(opcode, order, args)
+
+    def _validate_args(self, args: list):
+        pass
+
+    def _validate_opcode(self, opcode: str):
+        pass
+
+
 class IdivInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
@@ -490,7 +503,7 @@ class BreakInstructionFactory(InstructionFactory):
     def create_instruction(self, opcode: str, order: int, args: list):
         self._validate_opcode(opcode)
         self._validate_args(args)
-        return instr.DprintInstruction(opcode, order, args)
+        return instr.BreakInstruction(opcode, order, args)
 
     def _validate_args(self, args: list):
         pass
