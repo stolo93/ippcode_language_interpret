@@ -201,7 +201,7 @@ class Variable(Symbol):
         Get information, whether this variable was already initialized
         @return: bool
         """
-        return self.value is None
+        return self.value is not None
 
     def set_value(self, value, value_type: DataType):
         """
