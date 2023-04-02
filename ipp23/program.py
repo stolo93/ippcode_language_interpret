@@ -34,6 +34,8 @@ class Program:
         self._local_frames: list[Frame] = []
         # Data stack (stack of symbols)
         self._data_stack: list[Symbol] = []
+        # Call stack
+        self._call_stack: list[int] = []
 
     @property
     def program_counter(self) -> int:
@@ -210,6 +212,29 @@ class Program:
                 raise GenericErrorIPP23(f'Error: Incorrect frame type {frame_type}', ErrorType.ERR_SEMANTICS)
         return frame
 
+    @property
+    def call_stack(self) -> int:
+        """
+        Get the address from the top of the call stack
+        @raise RuntimeError
+        @return: int
+        """
+        if not self._call_stack:
+            raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_UNDEF_VAR)
+        return self._call_stack.pop()
+
+    @call_stack.setter
+    def call_stack(self, address: int) -> None:
+        """
+        Push @p address to call stack
+        @raise RuntimeError
+        @param address: int
+        @return: None
+        """
+        if address < 0:
+            raise RuntimeErrorIPP23(f'Error: Invalid address: {address}', ErrorType.ERR_SEMANTICS)
+        self._call_stack.append(address)
+
     def __repr__(self):
         program_counter = f'Program counter: {self.program_counter}\n'
         labels = 'Labels:\n' + str(self._labels) + '\n'
@@ -227,4 +252,6 @@ class Program:
         for data in self._data_stack:
             data_stack += str(data) + '\n'
 
-        return program_counter + labels + global_frame + temporary_frame + local_frames + data_stack + '\n'
+        call_stack = 'Call stack: \n' + str(self._call_stack)
+
+        return program_counter + labels + global_frame + temporary_frame + local_frames + data_stack + call_stack + '\n'
