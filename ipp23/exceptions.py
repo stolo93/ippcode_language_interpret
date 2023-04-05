@@ -11,6 +11,8 @@ class ErrorType(enum.Enum):
     ERR_CLI_ARGS = 10
     ERR_INP_FILE = 11
     ERR_OUT_FILE = 12
+    ERR_OPCODE = 22
+    ERR_SYNTAX = 23
     ERR_INTERNAL = 99
     ERR_XML_FORMAT = 31
     ERR_XML_STRUCT = 32
