@@ -58,10 +58,15 @@ class Interpret:
             for arg in instr:
                 args_dict[arg.tag] = arg
 
+            was_none = False
             for i in range(1, 4):
                 arg = args_dict.get('arg'+str(i))
+                if was_none and arg is not None:
+                    raise XMLErrorIPP23('Error: Instruction arguments are not numbered sequentially', ErrorType.ERR_XML_STRUCT)
+
                 if arg is None:
-                    break
+                    was_none = True
+                    continue
                 args.append(Argument.create_argument(arg))
             # Insert instruction
             self.instructions.append(factory.create_instruction(opcode, order, args))
