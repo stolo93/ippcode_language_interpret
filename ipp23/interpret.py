@@ -192,9 +192,11 @@ class Interpret:
         @raise XMLError
         @return: None
         """
-        if not self.instructions[0].order == 0:
+        # Check for negative order
+        if self.instructions[0].order < 0:
             raise XMLErrorIPP23('Error: Instruction order does not start correctly', ErrorType.ERR_XML_STRUCT)
 
-        for i in range(0, len(self.instructions)):
-            if self.instructions[i].order != i:
-                raise XMLErrorIPP23('Error: Invalid instruction order', ErrorType.ERR_XML_STRUCT)
+        # Check for duplicate order
+        for i in range(1, len(self.instructions)):
+            if self.instructions[i].order == self.instructions[i-1].order:
+                raise XMLErrorIPP23('Error: Duplicate order', ErrorType.ERR_XML_STRUCT)
