@@ -39,7 +39,14 @@ class Interpret:
 
         program_root = xml.getroot()
         for instr in program_root:
+            if instr.tag != 'instruction':
+                raise XMLErrorIPP23(f'Error: Invalid element, {instr.tag}', ErrorType.ERR_XML_STRUCT)
+
             attributes = instr.attrib
+
+            for key in attributes:
+                if key not in ['opcode', 'order']:
+                    raise XMLErrorIPP23(f'Error: Invalid attribute, {key}', ErrorType.ERR_XML_STRUCT)
 
             # Get opcode, order and correct instruction factory
             try:
