@@ -45,10 +45,13 @@ class Interpret:
             try:
                 opcode = attributes['opcode']
                 # Instruction indices start at 1, therefore I subtract 1 for better list indexing
-                order = int(attributes['order']) - 1
+                order = int(attributes['order'])
             except KeyError:
                 raise XMLErrorIPP23('Error: Missing attributes in input XML', ErrorType.ERR_XML_STRUCT)
+            except ValueError:
+                raise XMLErrorIPP23(f"Error: Invalid instruction order attribute, {attributes['order']}", ErrorType.ERR_XML_STRUCT)
 
+            order -= 1
             factory = Interpret._get_instruction_factory(opcode)
 
             # Get all instruction arguments
@@ -179,7 +182,7 @@ class Interpret:
             case 'BREAK':
                 factory = isf.BreakInstructionFactory()
             case _:
-                raise ValueError(f'No such instruction {opcode}')
+                raise XMLErrorIPP23(f'No such instruction {opcode}', ErrorType.ERR_XML_STRUCT)
         return factory
 
     def _check_instructions(self) -> None:
