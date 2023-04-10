@@ -113,10 +113,13 @@ class Stri2IntInstruction(Instruction):
 
 class TypeInstruction(Instruction):
     def execute(self, program_state: Program):
-        if not program_state.is_variable_initialized(self.args[1]):
+        try:
+            symbol_type = program_state.get_symbol_type(self.args[1])
+            symbol_type = symbol_type.value
+
+        # In case of an uninitialized variable
+        except RuntimeErrorIPP23:
             symbol_type = ''
-        else:
-            symbol_type = self.args[1].get_type().value
 
         program_state.set_variable(self.args[0], symbol_type, DataType.STRING)
         program_state.program_counter += 1
