@@ -238,8 +238,7 @@ class Program:
                 raise GenericErrorIPP23(f'Error: Incorrect frame type {frame_type}', ErrorType.ERR_SEMANTICS)
         return frame
 
-    @property
-    def call_stack(self) -> int:
+    def call_stack_pop(self) -> int:
         """
         Get the address from the top of the call stack
         @raise RuntimeError
@@ -249,8 +248,7 @@ class Program:
             raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_UNDEF_VAR)
         return self._call_stack.pop()
 
-    @call_stack.setter
-    def call_stack(self, address: int) -> None:
+    def call_stack_push(self, address: int) -> None:
         """
         Push @p address to call stack
         @raise RuntimeError
@@ -261,16 +259,13 @@ class Program:
             raise RuntimeErrorIPP23(f'Error: Invalid address: {address}', ErrorType.ERR_SEMANTICS)
         self._call_stack.append(address)
 
-    @property
-    def data_stack(self) -> Symbol:
+    def data_stack_pop(self) -> Symbol:
         if not self._data_stack:
             raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_UNDEF_VAR)
         return self._data_stack.pop()
 
-    @data_stack.setter
-    def data_stack(self, symbol: Symbol) -> None:
+    def data_stack_push(self, symbol: Symbol) -> None:
         self._data_stack.append(symbol)
-
 
     def __repr__(self):
         program_counter = f'Program counter: {self.program_counter}\n'

@@ -77,7 +77,7 @@ class DefVarInstruction(Instruction):
 
 class Int2CharInstruction(Instruction):
     def execute(self, program_state: Program):
-        int_value = self.args[1].get_value()
+        int_value = program_state.get_symbol_value(self.args[1])
 
         try:
             char_value = chr(int_value)
@@ -130,14 +130,13 @@ class TypeInstruction(Instruction):
 class CallInstruction(Instruction):
     def execute(self, program_state: Program):
         # Save incremented program counter onto call stack
-        program_state.call_stack = program_state.program_counter + 1
-
+        program_state.call_stack_push(program_state.program_counter + 1)
         program_state.program_counter = program_state.get_label_address(self.args[0])
 
 
 class ReturnInstruction(Instruction):
     def execute(self, program_state: Program):
-        program_state.program_counter = program_state.call_stack
+        program_state.program_counter = program_state.call_stack_pop()
 
 
 class LabelInstruction(Instruction):
@@ -465,14 +464,14 @@ class NotInstruction(Instruction):
 
 class PushsInstruction(Instruction):
     def execute(self, program_state: Program):
-        program_state.data_stack = self.args[0]
+        program_state.data_stack_push(self.args[0])
 
         program_state.program_counter += 1
 
 
 class PopsInstruction(Instruction):
     def execute(self, program_state: Program):
-        symbol = program_state.data_stack
+        symbol = program_state.data_stack_pop()
         program_state.set_variable(self.args[0], symbol.get_value(), symbol.get_type())
 
         program_state.program_counter += 1
