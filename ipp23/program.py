@@ -60,10 +60,14 @@ class Program:
 
     def get_line(self) -> str:
         """
-        Get one line from input to the interpreted program
+        Get one line from input to the interpreted program, not containing terminating new line
+        Acts as if input() was used
         @return: One line from input
         """
-        return self._file_in.readline()
+        line = self._file_in.readline()
+        if line[-1] == '\n':
+            line = line[:-1]
+        return line
 
     def create_label(self, label: Label, address: int) -> None:
         """

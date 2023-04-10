@@ -104,10 +104,8 @@ class Interpret:
         # Execute all instructions normally
         self.program_state.program_counter = 0
         program_length = len(self.instructions)
-        program_counter = self.program_state.program_counter
-        while program_counter < program_length:
-            self.instructions[program_counter].execute(self.program_state)
-            program_counter = self.program_state.program_counter
+        while self.program_state.program_counter < program_length:
+            self.instructions[self.program_state.program_counter].execute(self.program_state)
 
     @staticmethod
     def _get_instruction_factory(opcode: str):

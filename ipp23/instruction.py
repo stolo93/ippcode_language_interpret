@@ -487,7 +487,8 @@ class ReadInstruction(Instruction):
                     result = int(input_read)
                     result_type = DataType.INT
                 except ValueError:
-                    raise RuntimeErrorIPP23(f'Error: Invalid input for type int: {input_read}', ErrorType.ERR_OPERAND_VALUE)
+                    result = 'nil'
+                    result_type = DataType.NIL
 
             case DataType.STRING:
                 result = str(input_read)
