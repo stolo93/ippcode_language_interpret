@@ -7,6 +7,7 @@
 
 import abc
 import sys
+import re
 
 from .program import Program
 from .argument import Argument
@@ -484,7 +485,8 @@ class ReadInstruction(Instruction):
         match data_type_read:
             case DataType.INT:
                 try:
-                    result = int(input_read)
+                    num_base = self._get_number_base(input_read)
+                    result = int(input_read, base=num_base)
                     result_type = DataType.INT
                 except ValueError:
                     result = 'nil'
@@ -508,6 +510,30 @@ class ReadInstruction(Instruction):
         program_state.set_variable(self.args[0], result, result_type)
 
         program_state.program_counter += 1
+
+    @staticmethod
+    def _get_number_base(number_str: str) -> int:
+        """
+        Get number base
+        @raise Value error
+        @param number_str
+        @return: base
+        """
+        decimal_regex = r'[1-9][0-9]*(_[0-9]+)*|0'
+        hexadecimal_regex = r'0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*'
+        octal_regex = r'0[oO]?[0-7]+(_[0-7]+)*'
+        binary_regex = r'0[bB][01]+(_[01]+)*'
+
+        if re.fullmatch(decimal_regex, number_str):
+            return 10
+        elif re.fullmatch(hexadecimal_regex, number_str):
+            return 16
+        elif re.fullmatch(octal_regex, number_str):
+            return 8
+        elif re.fullmatch(binary_regex, number_str):
+            return 2
+        else:
+            raise ValueError(f"Invalid number format: {number_str}")
 
 
 class WriteInstruction(Instruction):
