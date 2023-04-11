@@ -498,32 +498,36 @@ class PopsInstruction(Instruction):
 class ReadInstruction(Instruction):
     def execute(self, program_state: Program):
         data_type_read = self.args[1].type_name
-        input_read = program_state.get_line()
+        try:
+            input_read = program_state.get_line()
+        except EOFError:
+            result = 'nil'
+            result_type = DataType.NIL
+        else:
+            match data_type_read:
+                case DataType.INT:
+                    try:
+                        num_base = self._get_number_base(input_read)
+                        result = int(input_read, base=num_base)
+                        result_type = DataType.INT
+                    except ValueError:
+                        result = 'nil'
+                        result_type = DataType.NIL
 
-        match data_type_read:
-            case DataType.INT:
-                try:
-                    num_base = self._get_number_base(input_read)
-                    result = int(input_read, base=num_base)
-                    result_type = DataType.INT
-                except ValueError:
-                    result = 'nil'
-                    result_type = DataType.NIL
+                case DataType.STRING:
+                    result = str(input_read)
+                    result_type = DataType.STRING
 
-            case DataType.STRING:
-                result = str(input_read)
-                result_type = DataType.STRING
-
-            case DataType.BOOL:
-                if input_read.upper() == 'TRUE':
-                    # 'true' is cast to True, case-insensitive
-                    result = True
-                else:
-                    # Everything else is cast to False
-                    result = False
-                result_type = DataType.BOOL
-            case _:
-                raise RuntimeErrorIPP23(f'Error: Read expects types int, bool or string, got {data_type_read}', ErrorType.ERR_OPERAND_TYPE)
+                case DataType.BOOL:
+                    if input_read.upper() == 'TRUE':
+                        # 'true' is cast to True, case-insensitive
+                        result = True
+                    else:
+                        # Everything else is cast to False
+                        result = False
+                    result_type = DataType.BOOL
+                case _:
+                    raise RuntimeErrorIPP23(f'Error: Read expects types int, bool or string, got {data_type_read}', ErrorType.ERR_OPERAND_TYPE)
 
         program_state.set_variable(self.args[0], result, result_type)
 

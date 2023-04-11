@@ -66,7 +66,7 @@ class Program:
         """
         line = self._file_in.readline()
         if line == '':
-            return line
+            raise EOFError
 
         elif line[-1] == '\n':
             line = line[:-1]
