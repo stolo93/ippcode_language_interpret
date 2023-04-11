@@ -60,10 +60,18 @@ class Program:
 
     def get_line(self) -> str:
         """
-        Get one line from input to the interpreted program
+        Get one line from input to the interpreted program, not containing terminating new line
+        Acts as if input() was used
         @return: One line from input
         """
-        return self._file_in.readline()
+        line = self._file_in.readline()
+        if line == '':
+            raise EOFError
+
+        elif line[-1] == '\n':
+            line = line[:-1]
+
+        return line
 
     def create_label(self, label: Label, address: int) -> None:
         """
@@ -145,7 +153,7 @@ class Program:
         frame = self.get_frame(var.get_frame())
         frame.delete_var(var)
 
-    def is_variable_initialized(self, var: Variable) -> bool:
+    def variable_is_initialized(self, var: Variable) -> bool:
         """
         Get information whether a variable is initialized
         @param var: Variable
@@ -153,6 +161,15 @@ class Program:
         """
         frame = self.get_frame(var.get_frame())
         return frame.is_initialized(var)
+
+    def variable_exists(self, var: Variable) -> bool:
+        """
+        Get information about the existence of a variable
+        @param var:
+        @return:
+        """
+        frame = self.get_frame(var.get_frame())
+        return frame.exists(var)
 
     def get_symbol_value(self, symbol: Symbol):
         if symbol.get_arg_type() == ArgumentType.VAR:
@@ -199,7 +216,7 @@ class Program:
         """
         # No local frame
         if not self._local_frames:
-            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be popped', ErrorType.ERR_NO_EXIST_FRAME)
 
         self._temporary_frame = copy.deepcopy(self._local_frames.pop())
         self._temporary_frame_valid = True
@@ -219,14 +236,14 @@ class Program:
             case FrameType.LF:
                 # No local frame
                 if not self._local_frames:
-                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist', ErrorType.ERR_NO_EXIST_FRAME)
 
                 frame = self._local_frames[len(self._local_frames) - 1]
 
             case FrameType.TF:
                 # Temporary frame does not exist
                 if not self._temporary_frame_valid:
-                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist', ErrorType.ERR_NO_EXIST_FRAME)
 
                 frame = self._temporary_frame
 
@@ -234,19 +251,17 @@ class Program:
                 raise GenericErrorIPP23(f'Error: Incorrect frame type {frame_type}', ErrorType.ERR_SEMANTICS)
         return frame
 
-    @property
-    def call_stack(self) -> int:
+    def call_stack_pop(self) -> int:
         """
         Get the address from the top of the call stack
         @raise RuntimeError
         @return: int
         """
         if not self._call_stack:
-            raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_VAR_NOT_INIT)
         return self._call_stack.pop()
 
-    @call_stack.setter
-    def call_stack(self, address: int) -> None:
+    def call_stack_push(self, address: int) -> None:
         """
         Push @p address to call stack
         @raise RuntimeError
@@ -257,16 +272,13 @@ class Program:
             raise RuntimeErrorIPP23(f'Error: Invalid address: {address}', ErrorType.ERR_SEMANTICS)
         self._call_stack.append(address)
 
-    @property
-    def data_stack(self) -> Symbol:
+    def data_stack_pop(self) -> Symbol:
         if not self._data_stack:
-            raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_VAR_NOT_INIT)
         return self._data_stack.pop()
 
-    @data_stack.setter
-    def data_stack(self, symbol: Symbol) -> None:
+    def data_stack_push(self, symbol: Symbol) -> None:
         self._data_stack.append(symbol)
-
 
     def __repr__(self):
         program_counter = f'Program counter: {self.program_counter}\n'

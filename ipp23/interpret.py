@@ -39,16 +39,26 @@ class Interpret:
 
         program_root = xml.getroot()
         for instr in program_root:
+            if instr.tag != 'instruction':
+                raise XMLErrorIPP23(f'Error: Invalid element, {instr.tag}', ErrorType.ERR_XML_STRUCT)
+
             attributes = instr.attrib
+
+            for key in attributes:
+                if key not in ['opcode', 'order']:
+                    raise XMLErrorIPP23(f'Error: Invalid attribute, {key}', ErrorType.ERR_XML_STRUCT)
 
             # Get opcode, order and correct instruction factory
             try:
                 opcode = attributes['opcode']
                 # Instruction indices start at 1, therefore I subtract 1 for better list indexing
-                order = int(attributes['order']) - 1
+                order = int(attributes['order'])
             except KeyError:
                 raise XMLErrorIPP23('Error: Missing attributes in input XML', ErrorType.ERR_XML_STRUCT)
+            except ValueError:
+                raise XMLErrorIPP23(f"Error: Invalid instruction order attribute, {attributes['order']}", ErrorType.ERR_XML_STRUCT)
 
+            order -= 1
             factory = Interpret._get_instruction_factory(opcode)
 
             # Get all instruction arguments
@@ -94,10 +104,8 @@ class Interpret:
         # Execute all instructions normally
         self.program_state.program_counter = 0
         program_length = len(self.instructions)
-        program_counter = self.program_state.program_counter
-        while program_counter < program_length:
-            self.instructions[program_counter].execute(self.program_state)
-            program_counter = self.program_state.program_counter
+        while self.program_state.program_counter < program_length:
+            self.instructions[self.program_state.program_counter].execute(self.program_state)
 
     @staticmethod
     def _get_instruction_factory(opcode: str):
@@ -179,7 +187,7 @@ class Interpret:
             case 'BREAK':
                 factory = isf.BreakInstructionFactory()
             case _:
-                raise ValueError(f'No such instruction {opcode}')
+                raise XMLErrorIPP23(f'No such instruction {opcode}', ErrorType.ERR_XML_STRUCT)
         return factory
 
     def _check_instructions(self) -> None:
@@ -189,9 +197,13 @@ class Interpret:
         @raise XMLError
         @return: None
         """
-        if not self.instructions[0].order == 0:
+        if not self.instructions:
+            return
+        # Check for negative order
+        if self.instructions[0].order < 0:
             raise XMLErrorIPP23('Error: Instruction order does not start correctly', ErrorType.ERR_XML_STRUCT)
 
-        for i in range(0, len(self.instructions)):
-            if self.instructions[i].order != i:
-                raise XMLErrorIPP23('Error: Invalid instruction order', ErrorType.ERR_XML_STRUCT)
+        # Check for duplicate order
+        for i in range(1, len(self.instructions)):
+            if self.instructions[i].order == self.instructions[i-1].order:
+                raise XMLErrorIPP23('Error: Duplicate order', ErrorType.ERR_XML_STRUCT)

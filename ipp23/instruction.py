@@ -7,11 +7,12 @@
 
 import abc
 import sys
+import re
 
 from .program import Program
 from .argument import Argument
 from .exceptions import RuntimeErrorIPP23, ErrorType, ExitProgramException
-from .type_enums import DataType
+from .type_enums import DataType, ArgumentType
 
 
 class Instruction(abc.ABC):
@@ -44,8 +45,8 @@ class Instruction(abc.ABC):
 
 class MoveInstruction(Instruction):
     def execute(self, program_state: Program):
-        symbol_type = self.args[1].get_type()
-        symbol_value = self.args[1].get_value()
+        symbol_type = program_state.get_symbol_type(self.args[1])
+        symbol_value = program_state.get_symbol_value(self.args[1])
         program_state.set_variable(self.args[0], symbol_value, symbol_type)
         program_state.program_counter += 1
 
@@ -76,11 +77,13 @@ class DefVarInstruction(Instruction):
 
 class Int2CharInstruction(Instruction):
     def execute(self, program_state: Program):
-        int_value = self.args[1].get_value()
+        int_value = program_state.get_symbol_value(self.args[1])
+        if program_state.get_symbol_type(self.args[1]) != DataType.INT:
+            raise RuntimeErrorIPP23(f'Error: Invalid operand type for Int2Char instruction, {int_value}', ErrorType.ERR_OPERAND_TYPE)
 
         try:
             char_value = chr(int_value)
-        except (ValueError, TypeError):
+        except ValueError:
             raise RuntimeErrorIPP23(f'Error: Invalid ordinal value for Int2Char instruction, {int_value}', ErrorType.ERR_STRING)
 
         program_state.set_variable(self.args[0], char_value, DataType.STRING)
@@ -89,15 +92,15 @@ class Int2CharInstruction(Instruction):
 
 class Stri2IntInstruction(Instruction):
     def execute(self, program_state: Program):
-        if self.args[2].get_type() != DataType.INT:
+        if program_state.get_symbol_type(self.args[2]) != DataType.INT:
             raise RuntimeErrorIPP23('Error: Index to string is not an integer', ErrorType.ERR_OPERAND_TYPE)
-        if self.args[1].get_type() != DataType.STRING:
+        if program_state.get_symbol_type(self.args[1]) != DataType.STRING:
             raise RuntimeErrorIPP23('Error: Invalid argument type for Stri2Int, string expected', ErrorType.ERR_OPERAND_TYPE)
 
         string_index = self.args[2].get_value()
         string_value = self.args[1].get_value()
 
-        if string_index >= len(string_value):
+        if string_index >= len(string_value) or string_index < 0:
             raise RuntimeErrorIPP23('Error: Index out of bounds', ErrorType.ERR_STRING)
 
         char_value = string_value[string_index]
@@ -112,10 +115,17 @@ class Stri2IntInstruction(Instruction):
 
 class TypeInstruction(Instruction):
     def execute(self, program_state: Program):
-        if not program_state.is_variable_initialized(self.args[1]):
-            symbol_type = ''
-        else:
-            symbol_type = self.args[1].get_type().value
+        try:
+            symbol_type = program_state.get_symbol_type(self.args[1])
+            symbol_type = symbol_type.value
+
+        # In case of an uninitialized variable
+        except RuntimeErrorIPP23 as e:
+            # In case variable is defined but uninitialized
+            if e.exit_code == ErrorType.ERR_VAR_NOT_INIT.value:
+                symbol_type = ''
+            else:
+                raise e
 
         program_state.set_variable(self.args[0], symbol_type, DataType.STRING)
         program_state.program_counter += 1
@@ -126,14 +136,13 @@ class TypeInstruction(Instruction):
 class CallInstruction(Instruction):
     def execute(self, program_state: Program):
         # Save incremented program counter onto call stack
-        program_state.call_stack = program_state.program_counter + 1
-
+        program_state.call_stack_push(program_state.program_counter + 1)
         program_state.program_counter = program_state.get_label_address(self.args[0])
 
 
 class ReturnInstruction(Instruction):
     def execute(self, program_state: Program):
-        program_state.program_counter = program_state.call_stack
+        program_state.program_counter = program_state.call_stack_pop()
 
 
 class LabelInstruction(Instruction):
@@ -160,9 +169,10 @@ class JumpIfEqInstruction(Instruction):
         else:
             raise RuntimeErrorIPP23(f'Error: Operands incorrect types for comparison: {data_type1} and {data_type2}', ErrorType.ERR_OPERAND_TYPE)
 
+        label_address = program_state.get_label_address(self.args[0])
         # If values of arguments are equal
         if program_state.get_symbol_value(self.args[1]) == program_state.get_symbol_value(self.args[2]):
-            program_state.program_counter = program_state.get_label_address(self.args[0])
+            program_state.program_counter = label_address
         else:
             program_state.program_counter += 1
 
@@ -180,9 +190,10 @@ class JumpIfNeqInstruction(Instruction):
         else:
             raise RuntimeErrorIPP23(f'Error: Operands incorrect types for comparison: {data_type1} and {data_type2}', ErrorType.ERR_OPERAND_TYPE)
 
+        label_address = program_state.get_label_address(self.args[0])
         # If values of arguments are not equal
         if program_state.get_symbol_value(self.args[1]) != program_state.get_symbol_value(self.args[2]):
-            program_state.program_counter = program_state.get_label_address(self.args[0])
+            program_state.program_counter = label_address
         else:
             program_state.program_counter += 1
 
@@ -242,7 +253,7 @@ class GetCharInstruction(Instruction):
         if arg2_value not in range(0, len(arg1_value)):
             raise RuntimeErrorIPP23(f'Error: Index out of bounds', ErrorType.ERR_STRING)
 
-        result = arg2_value[arg1_value]
+        result = arg1_value[arg2_value]
         program_state.set_variable(self.args[0], result, DataType.STRING)
 
         program_state.program_counter += 1
@@ -266,8 +277,7 @@ class SetCharInstruction(Instruction):
             raise RuntimeErrorIPP23('Error: Empty source string', ErrorType.ERR_STRING)
 
         # Copy string and set character at index to the first char from the third argument
-        result = arg0_value[:]
-        result[arg1_value] = arg2_value[0]
+        result = arg0_value[:arg1_value] + arg2_value[0] + arg0_value[arg1_value + 1:]
 
         program_state.set_variable(self.args[0], result, DataType.STRING)
 
@@ -390,7 +400,8 @@ class EqInstruction(Instruction):
         arg1_type = program_state.get_symbol_type(self.args[1])
         arg2_type = program_state.get_symbol_type(self.args[2])
 
-        if not arg1_type == arg2_type:
+        # If argument type is NIL it can be compared to anything
+        if not (arg1_type == arg2_type) and not (arg1_type == DataType.NIL or arg2_type == DataType.NIL):
             raise RuntimeErrorIPP23(f'Error: Relational operator expects same type arguments, got {arg1_type} and {arg2_type}', ErrorType.ERR_OPERAND_TYPE)
 
         arg1_value = program_state.get_symbol_value(self.args[1])
@@ -461,14 +472,22 @@ class NotInstruction(Instruction):
 
 class PushsInstruction(Instruction):
     def execute(self, program_state: Program):
-        program_state.data_stack = self.args[0]
+
+        if self.args[0].get_arg_type() == ArgumentType.VAR:
+            if not program_state.variable_exists(self.args[0]):
+                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not defined', ErrorType.ERR_NO_EXIST_VAR)
+
+            if not program_state.variable_is_initialized(self.args[0]):
+                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not initialized', ErrorType.ERR_VAR_NOT_INIT)
+
+        program_state.data_stack_push(self.args[0])
 
         program_state.program_counter += 1
 
 
 class PopsInstruction(Instruction):
     def execute(self, program_state: Program):
-        symbol = program_state.data_stack
+        symbol = program_state.data_stack_pop()
         program_state.set_variable(self.args[0], symbol.get_value(), symbol.get_type())
 
         program_state.program_counter += 1
@@ -479,34 +498,64 @@ class PopsInstruction(Instruction):
 class ReadInstruction(Instruction):
     def execute(self, program_state: Program):
         data_type_read = self.args[1].type_name
-        input_read = program_state.get_line()
+        try:
+            input_read = program_state.get_line()
+        except EOFError:
+            result = 'nil'
+            result_type = DataType.NIL
+        else:
+            match data_type_read:
+                case DataType.INT:
+                    try:
+                        num_base = self._get_number_base(input_read)
+                        result = int(input_read, base=num_base)
+                        result_type = DataType.INT
+                    except ValueError:
+                        result = 'nil'
+                        result_type = DataType.NIL
 
-        match data_type_read:
-            case DataType.INT:
-                try:
-                    result = int(input_read)
-                    result_type = DataType.INT
-                except ValueError:
-                    raise RuntimeErrorIPP23(f'Error: Invalid input for type int: {input_read}', ErrorType.ERR_OPERAND_VALUE)
+                case DataType.STRING:
+                    result = str(input_read)
+                    result_type = DataType.STRING
 
-            case DataType.STRING:
-                result = str(input_read)
-                result_type = DataType.STRING
-
-            case DataType.BOOL:
-                if input_read.upper() == 'TRUE':
-                    # 'true' is cast to True, case-insensitive
-                    result = True
-                else:
-                    # Everything else is cast to False
-                    result = False
-                result_type = DataType.BOOL
-            case _:
-                raise RuntimeErrorIPP23(f'Error: Read expects types int, bool or string, got {data_type_read}', ErrorType.ERR_OPERAND_TYPE)
+                case DataType.BOOL:
+                    if input_read.upper() == 'TRUE':
+                        # 'true' is cast to True, case-insensitive
+                        result = True
+                    else:
+                        # Everything else is cast to False
+                        result = False
+                    result_type = DataType.BOOL
+                case _:
+                    raise RuntimeErrorIPP23(f'Error: Read expects types int, bool or string, got {data_type_read}', ErrorType.ERR_OPERAND_TYPE)
 
         program_state.set_variable(self.args[0], result, result_type)
 
         program_state.program_counter += 1
+
+    @staticmethod
+    def _get_number_base(number_str: str) -> int:
+        """
+        Get number base
+        @raise Value error
+        @param number_str
+        @return: base
+        """
+        decimal_regex = r'[+,-]?[1-9][0-9]*(_[0-9]+)*|0'
+        hexadecimal_regex = r'0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*'
+        octal_regex = r'0[oO]?[0-7]+(_[0-7]+)*'
+        binary_regex = r'0[bB][01]+(_[01]+)*'
+
+        if re.fullmatch(decimal_regex, number_str):
+            return 10
+        elif re.fullmatch(hexadecimal_regex, number_str):
+            return 16
+        elif re.fullmatch(octal_regex, number_str):
+            return 8
+        elif re.fullmatch(binary_regex, number_str):
+            return 2
+        else:
+            raise ValueError(f"Invalid number format: {number_str}")
 
 
 class WriteInstruction(Instruction):
@@ -524,27 +573,10 @@ class WriteInstruction(Instruction):
         elif arg0_type == DataType.NIL:
             print('', end='')
 
-        elif arg0_type == DataType.STRING:
-            arg0_value = self._convert_escape_sequences(arg0_value)
-            print(arg0_value, end='')
-
         else:
             print(arg0_value, end='')
 
         program_state.program_counter += 1
-
-    @staticmethod
-    def _convert_escape_sequences(string: str) -> str:
-        start_index = 0
-        slash_index = string.find('\\', start_index)
-        while slash_index != -1:
-            esc_seq = string[slash_index:slash_index+4]
-            replace_char = chr(int(esc_seq[2:]))
-            string = string.replace(esc_seq, replace_char)
-
-            start_index = slash_index + 1
-            slash_index = string.find('\\', start_index)
-        return string
 
 
 class DprintInstruction(Instruction):

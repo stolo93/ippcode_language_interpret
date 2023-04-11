@@ -9,7 +9,7 @@ import abc
 import xml.etree.ElementTree as Etree
 
 from .type_enums import DataType, ArgumentType, FrameType
-from .exceptions import RuntimeErrorIPP23, ErrorType
+from .exceptions import RuntimeErrorIPP23, XMLErrorIPP23, ErrorType
 
 
 class Argument(abc.ABC):
@@ -48,12 +48,15 @@ class Argument(abc.ABC):
                 elif arg_value == 'false':
                     value = False
                 else:
-                    raise ValueError(f'Error: Incorrect value for type bool, {arg_value}')
+                    raise XMLErrorIPP23(f'Error: Incorrect value for type bool, {arg_value}', ErrorType.ERR_XML_STRUCT)
 
                 arg_obj = ConstBool(value)
 
             case DataType.INT.value:
-                value = int(arg_value)
+                try:
+                    value = int(arg_value)
+                except ValueError:
+                    raise XMLErrorIPP23(f'Error: Invalid int literal, {arg_value}', ErrorType.ERR_XML_STRUCT)
                 arg_obj = ConstInt(value)
 
             case DataType.STRING.value:
@@ -62,7 +65,7 @@ class Argument(abc.ABC):
             case ArgumentType.VAR.value:
                 at_pos = arg_value.find('@')
                 if at_pos == -1:
-                    raise ValueError(f'Error: Incorrect variable {arg_value}')
+                    raise XMLErrorIPP23(f'Error: Incorrect variable {arg_value}', ErrorType.ERR_XML_STRUCT)
 
                 match arg_value[:at_pos].upper():
                     case 'GF':
@@ -72,14 +75,14 @@ class Argument(abc.ABC):
                     case 'LF':
                         frame = FrameType.LF
                     case _:
-                        ValueError(f'Error: Incorrect frame type {arg_value}')
+                        XMLErrorIPP23(f'Error: Incorrect frame type {arg_value}', ErrorType.ERR_XML_STRUCT)
                         return
 
                 arg_obj = Variable(arg_value[at_pos+1:], frame)
 
             case ArgumentType.LABEL.value:
                 if arg_value == '':
-                    raise ValueError(f'Error: Empty label name')
+                    raise XMLErrorIPP23(f'Error: Empty label name', ErrorType.ERR_XML_STRUCT)
 
                 arg_obj = Label(str(arg_value))
 
@@ -92,12 +95,12 @@ class Argument(abc.ABC):
                     case DataType.STRING.value:
                         arg_value = DataType.STRING
                     case _:
-                        raise ValueError(f'Error: Incorrect type name, {arg_value}')
+                        raise XMLErrorIPP23(f'Error: Incorrect type name, {arg_value}', ErrorType.ERR_XML_STRUCT)
 
                 arg_obj = Type(arg_value)
 
             case _:
-                raise ValueError(f'Error: Incorrect argument type error, {arg_type}')
+                raise XMLErrorIPP23(f'Error: Incorrect argument type error, {arg_type}', ErrorType.ERR_XML_STRUCT)
 
         return arg_obj
 
@@ -133,7 +136,10 @@ class Symbol(Argument, abc.ABC):
     """
     def __init__(self, arg_type: ArgumentType, value=None, value_type: DataType = None):
         super().__init__(arg_type)
-        self.value = value
+        if value_type == DataType.STRING:
+            self.value = self._convert_escape_sequences(value)
+        else:
+            self.value = value
         self.value_type = value_type
 
     def get_value(self):
@@ -152,6 +158,19 @@ class Symbol(Argument, abc.ABC):
 
     def __repr__(self):
         return self.value_type.value + ':' + str(self.value)
+
+    @staticmethod
+    def _convert_escape_sequences(string: str) -> str:
+        start_index = 0
+        slash_index = string.find('\\', start_index)
+        while slash_index != -1:
+            esc_seq = string[slash_index:slash_index+4]
+            replace_char = chr(int(esc_seq[2:]))
+            string = string.replace(esc_seq, replace_char)
+
+            start_index = slash_index + 1
+            slash_index = string.find('\\', start_index)
+        return string
 
 
 class ConstInt(Symbol):
@@ -220,7 +239,7 @@ class Variable(Symbol):
         @return: value
         """
         if not self.is_initialized():
-            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access value', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access value', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.value
 
@@ -231,7 +250,7 @@ class Variable(Symbol):
         @return: DataType
         """
         if not self.is_initialized():
-            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access type', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access type', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.value_type
 
