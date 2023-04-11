@@ -65,8 +65,12 @@ class Program:
         @return: One line from input
         """
         line = self._file_in.readline()
-        if line[-1] == '\n':
+        if line == '':
+            return line
+
+        elif line[-1] == '\n':
             line = line[:-1]
+
         return line
 
     def create_label(self, label: Label, address: int) -> None:
