@@ -45,8 +45,8 @@ class Instruction(abc.ABC):
 
 class MoveInstruction(Instruction):
     def execute(self, program_state: Program):
-        symbol_type = self.args[1].get_type()
-        symbol_value = self.args[1].get_value()
+        symbol_type = program_state.get_symbol_type(self.args[1])
+        symbol_value = program_state.get_symbol_value(self.args[1])
         program_state.set_variable(self.args[0], symbol_value, symbol_type)
         program_state.program_counter += 1
 
@@ -90,15 +90,15 @@ class Int2CharInstruction(Instruction):
 
 class Stri2IntInstruction(Instruction):
     def execute(self, program_state: Program):
-        if self.args[2].get_type() != DataType.INT:
+        if program_state.get_symbol_type(self.args[2]) != DataType.INT:
             raise RuntimeErrorIPP23('Error: Index to string is not an integer', ErrorType.ERR_OPERAND_TYPE)
-        if self.args[1].get_type() != DataType.STRING:
+        if program_state.get_symbol_type(self.args[1]) != DataType.STRING:
             raise RuntimeErrorIPP23('Error: Invalid argument type for Stri2Int, string expected', ErrorType.ERR_OPERAND_TYPE)
 
         string_index = self.args[2].get_value()
         string_value = self.args[1].get_value()
 
-        if string_index >= len(string_value):
+        if string_index >= len(string_value) or string_index < 0:
             raise RuntimeErrorIPP23('Error: Index out of bounds', ErrorType.ERR_STRING)
 
         char_value = string_value[string_index]
@@ -118,8 +118,12 @@ class TypeInstruction(Instruction):
             symbol_type = symbol_type.value
 
         # In case of an uninitialized variable
-        except RuntimeErrorIPP23:
-            symbol_type = ''
+        except RuntimeErrorIPP23 as e:
+            # In case variable is defined but uninitialized
+            if e.exit_code == ErrorType.ERR_VAR_NOT_INIT.value:
+                symbol_type = ''
+            else:
+                raise e
 
         program_state.set_variable(self.args[0], symbol_type, DataType.STRING)
         program_state.program_counter += 1

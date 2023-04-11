@@ -203,7 +203,7 @@ class Program:
         """
         # No local frame
         if not self._local_frames:
-            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+            raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be popped', ErrorType.ERR_NO_EXIST_FRAME)
 
         self._temporary_frame = copy.deepcopy(self._local_frames.pop())
         self._temporary_frame_valid = True
@@ -223,14 +223,14 @@ class Program:
             case FrameType.LF:
                 # No local frame
                 if not self._local_frames:
-                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist', ErrorType.ERR_NO_EXIST_FRAME)
 
                 frame = self._local_frames[len(self._local_frames) - 1]
 
             case FrameType.TF:
                 # Temporary frame does not exist
                 if not self._temporary_frame_valid:
-                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist, it can not be pushed', ErrorType.ERR_NO_EXIST_FRAME)
+                    raise RuntimeErrorIPP23('Error: Temporary frame does not exist', ErrorType.ERR_NO_EXIST_FRAME)
 
                 frame = self._temporary_frame
 
@@ -245,7 +245,7 @@ class Program:
         @return: int
         """
         if not self._call_stack:
-            raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Accessing an empty call stack', ErrorType.ERR_VAR_NOT_INIT)
         return self._call_stack.pop()
 
     def call_stack_push(self, address: int) -> None:
@@ -261,7 +261,7 @@ class Program:
 
     def data_stack_pop(self) -> Symbol:
         if not self._data_stack:
-            raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_VAR_NOT_INIT)
         return self._data_stack.pop()
 
     def data_stack_push(self, symbol: Symbol) -> None:

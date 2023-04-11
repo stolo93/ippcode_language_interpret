@@ -51,7 +51,7 @@ class Frame:
         @return: Value
         """
         if not self.is_initialized(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get value', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get value', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.variables[var.name].get_value()
 
@@ -63,7 +63,7 @@ class Frame:
         @return: Type
         """
         if not self.is_initialized(var):
-            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get type', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23(f'Error: Variable {var.name} not initialized, can not get type', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.variables[var.name].get_type()
 

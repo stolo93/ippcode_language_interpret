@@ -239,7 +239,7 @@ class Variable(Symbol):
         @return: value
         """
         if not self.is_initialized():
-            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access value', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access value', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.value
 
@@ -250,7 +250,7 @@ class Variable(Symbol):
         @return: DataType
         """
         if not self.is_initialized():
-            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access type', ErrorType.ERR_UNDEF_VAR)
+            raise RuntimeErrorIPP23('Error: Variable not initialized, cannot access type', ErrorType.ERR_VAR_NOT_INIT)
 
         return self.value_type
 

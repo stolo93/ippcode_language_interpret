@@ -21,7 +21,7 @@ class ErrorType(enum.Enum):
     ERR_OPERAND_VALUE = 57
     ERR_NO_EXIST_VAR = 54
     ERR_NO_EXIST_FRAME = 55
-    ERR_UNDEF_VAR = 56
+    ERR_VAR_NOT_INIT = 56
     ERR_STRING = 58
 
 
