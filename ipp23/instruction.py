@@ -253,7 +253,7 @@ class GetCharInstruction(Instruction):
         if arg2_value not in range(0, len(arg1_value)):
             raise RuntimeErrorIPP23(f'Error: Index out of bounds', ErrorType.ERR_STRING)
 
-        result = arg2_value[arg1_value]
+        result = arg1_value[arg2_value]
         program_state.set_variable(self.args[0], result, DataType.STRING)
 
         program_state.program_counter += 1
