@@ -78,10 +78,12 @@ class DefVarInstruction(Instruction):
 class Int2CharInstruction(Instruction):
     def execute(self, program_state: Program):
         int_value = program_state.get_symbol_value(self.args[1])
+        if program_state.get_symbol_type(self.args[1]) != DataType.INT:
+            raise RuntimeErrorIPP23(f'Error: Invalid operand type for Int2Char instruction, {int_value}', ErrorType.ERR_OPERAND_TYPE)
 
         try:
             char_value = chr(int_value)
-        except (ValueError, TypeError):
+        except ValueError:
             raise RuntimeErrorIPP23(f'Error: Invalid ordinal value for Int2Char instruction, {int_value}', ErrorType.ERR_STRING)
 
         program_state.set_variable(self.args[0], char_value, DataType.STRING)
@@ -397,7 +399,8 @@ class EqInstruction(Instruction):
         arg1_type = program_state.get_symbol_type(self.args[1])
         arg2_type = program_state.get_symbol_type(self.args[2])
 
-        if not arg1_type == arg2_type:
+        # If argument type is NIL it can be compared to anything
+        if not (arg1_type == arg2_type) and not (arg1_type == DataType.NIL or arg2_type == DataType.NIL):
             raise RuntimeErrorIPP23(f'Error: Relational operator expects same type arguments, got {arg1_type} and {arg2_type}', ErrorType.ERR_OPERAND_TYPE)
 
         arg1_value = program_state.get_symbol_value(self.args[1])
