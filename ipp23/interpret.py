@@ -197,6 +197,8 @@ class Interpret:
         @raise XMLError
         @return: None
         """
+        if not self.instructions:
+            return
         # Check for negative order
         if self.instructions[0].order < 0:
             raise XMLErrorIPP23('Error: Instruction order does not start correctly', ErrorType.ERR_XML_STRUCT)

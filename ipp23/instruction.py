@@ -12,7 +12,7 @@ import re
 from .program import Program
 from .argument import Argument
 from .exceptions import RuntimeErrorIPP23, ErrorType, ExitProgramException
-from .type_enums import DataType
+from .type_enums import DataType, ArgumentType
 
 
 class Instruction(abc.ABC):
@@ -472,6 +472,14 @@ class NotInstruction(Instruction):
 
 class PushsInstruction(Instruction):
     def execute(self, program_state: Program):
+
+        if self.args[0].get_arg_type() == ArgumentType.VAR:
+            if not program_state.variable_exists(self.args[0]):
+                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not defined', ErrorType.ERR_NO_EXIST_VAR)
+
+            if not program_state.variable_is_initialized(self.args[0]):
+                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not initialized', ErrorType.ERR_VAR_NOT_INIT)
+
         program_state.data_stack_push(self.args[0])
 
         program_state.program_counter += 1

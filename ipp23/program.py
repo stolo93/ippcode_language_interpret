@@ -153,7 +153,7 @@ class Program:
         frame = self.get_frame(var.get_frame())
         frame.delete_var(var)
 
-    def is_variable_initialized(self, var: Variable) -> bool:
+    def variable_is_initialized(self, var: Variable) -> bool:
         """
         Get information whether a variable is initialized
         @param var: Variable
@@ -161,6 +161,15 @@ class Program:
         """
         frame = self.get_frame(var.get_frame())
         return frame.is_initialized(var)
+
+    def variable_exists(self, var: Variable) -> bool:
+        """
+        Get information about the existence of a variable
+        @param var:
+        @return:
+        """
+        frame = self.get_frame(var.get_frame())
+        return frame.exists(var)
 
     def get_symbol_value(self, symbol: Symbol):
         if symbol.get_arg_type() == ArgumentType.VAR:
