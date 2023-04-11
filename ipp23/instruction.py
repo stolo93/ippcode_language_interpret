@@ -169,9 +169,10 @@ class JumpIfEqInstruction(Instruction):
         else:
             raise RuntimeErrorIPP23(f'Error: Operands incorrect types for comparison: {data_type1} and {data_type2}', ErrorType.ERR_OPERAND_TYPE)
 
+        label_address = program_state.get_label_address(self.args[0])
         # If values of arguments are equal
         if program_state.get_symbol_value(self.args[1]) == program_state.get_symbol_value(self.args[2]):
-            program_state.program_counter = program_state.get_label_address(self.args[0])
+            program_state.program_counter = label_address
         else:
             program_state.program_counter += 1
 
@@ -189,9 +190,10 @@ class JumpIfNeqInstruction(Instruction):
         else:
             raise RuntimeErrorIPP23(f'Error: Operands incorrect types for comparison: {data_type1} and {data_type2}', ErrorType.ERR_OPERAND_TYPE)
 
+        label_address = program_state.get_label_address(self.args[0])
         # If values of arguments are not equal
         if program_state.get_symbol_value(self.args[1]) != program_state.get_symbol_value(self.args[2]):
-            program_state.program_counter = program_state.get_label_address(self.args[0])
+            program_state.program_counter = label_address
         else:
             program_state.program_counter += 1
 
