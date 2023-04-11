@@ -136,7 +136,10 @@ class Symbol(Argument, abc.ABC):
     """
     def __init__(self, arg_type: ArgumentType, value=None, value_type: DataType = None):
         super().__init__(arg_type)
-        self.value = value
+        if value_type == DataType.STRING:
+            self.value = self._convert_escape_sequences(value)
+        else:
+            self.value = value
         self.value_type = value_type
 
     def get_value(self):
@@ -155,6 +158,19 @@ class Symbol(Argument, abc.ABC):
 
     def __repr__(self):
         return self.value_type.value + ':' + str(self.value)
+
+    @staticmethod
+    def _convert_escape_sequences(string: str) -> str:
+        start_index = 0
+        slash_index = string.find('\\', start_index)
+        while slash_index != -1:
+            esc_seq = string[slash_index:slash_index+4]
+            replace_char = chr(int(esc_seq[2:]))
+            string = string.replace(esc_seq, replace_char)
+
+            start_index = slash_index + 1
+            slash_index = string.find('\\', start_index)
+        return string
 
 
 class ConstInt(Symbol):

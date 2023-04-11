@@ -553,27 +553,10 @@ class WriteInstruction(Instruction):
         elif arg0_type == DataType.NIL:
             print('', end='')
 
-        elif arg0_type == DataType.STRING:
-            arg0_value = self._convert_escape_sequences(arg0_value)
-            print(arg0_value, end='')
-
         else:
             print(arg0_value, end='')
 
         program_state.program_counter += 1
-
-    @staticmethod
-    def _convert_escape_sequences(string: str) -> str:
-        start_index = 0
-        slash_index = string.find('\\', start_index)
-        while slash_index != -1:
-            esc_seq = string[slash_index:slash_index+4]
-            replace_char = chr(int(esc_seq[2:]))
-            string = string.replace(esc_seq, replace_char)
-
-            start_index = slash_index + 1
-            slash_index = string.find('\\', start_index)
-        return string
 
 
 class DprintInstruction(Instruction):
