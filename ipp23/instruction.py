@@ -530,7 +530,7 @@ class ReadInstruction(Instruction):
         @param number_str
         @return: base
         """
-        decimal_regex = r'[1-9][0-9]*(_[0-9]+)*|0'
+        decimal_regex = r'[+,-]?[1-9][0-9]*(_[0-9]+)*|0'
         hexadecimal_regex = r'0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*'
         octal_regex = r'0[oO]?[0-7]+(_[0-7]+)*'
         binary_regex = r'0[bB][01]+(_[01]+)*'
