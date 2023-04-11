@@ -277,8 +277,7 @@ class SetCharInstruction(Instruction):
             raise RuntimeErrorIPP23('Error: Empty source string', ErrorType.ERR_STRING)
 
         # Copy string and set character at index to the first char from the third argument
-        result = arg0_value[:]
-        result[arg1_value] = arg2_value[0]
+        result = arg0_value[:arg1_value] + arg2_value[0] + arg0_value[arg1_value + 1:]
 
         program_state.set_variable(self.args[0], result, DataType.STRING)
 
