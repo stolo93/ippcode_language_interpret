@@ -33,7 +33,7 @@ class Argument(abc.ABC):
         @param arg_element: xml element representation of the argument
         @return: Correct argument object
         """
-        arg_value = arg_element.text
+        arg_value = arg_element.text.strip()
         if arg_value is None:
             arg_value = ''
         arg_type = arg_element.attrib.get('type')
