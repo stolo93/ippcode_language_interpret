@@ -97,10 +97,10 @@ class Stri2IntInstruction(Instruction):
         if program_state.get_symbol_type(self.args[1]) != DataType.STRING:
             raise RuntimeErrorIPP23('Error: Invalid argument type for Stri2Int, string expected', ErrorType.ERR_OPERAND_TYPE)
 
-        string_index = self.args[2].get_value()
-        string_value = self.args[1].get_value()
+        string_index = program_state.get_symbol_value(self.args[2])
+        string_value = program_state.get_symbol_value(self.args[1])
 
-        if string_index >= len(string_value) or string_index < 0:
+        if string_index not in range(0, len(string_value)):
             raise RuntimeErrorIPP23('Error: Index out of bounds', ErrorType.ERR_STRING)
 
         char_value = string_value[string_index]
@@ -472,23 +472,18 @@ class NotInstruction(Instruction):
 
 class PushsInstruction(Instruction):
     def execute(self, program_state: Program):
+        value = program_state.get_symbol_value(self.args[0])
+        value_type = program_state.get_symbol_type(self.args[0])
 
-        if self.args[0].get_arg_type() == ArgumentType.VAR:
-            if not program_state.variable_exists(self.args[0]):
-                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not defined', ErrorType.ERR_NO_EXIST_VAR)
-
-            if not program_state.variable_is_initialized(self.args[0]):
-                raise RuntimeErrorIPP23(f'Error: Variable can not be pushed because it is not initialized', ErrorType.ERR_VAR_NOT_INIT)
-
-        program_state.data_stack_push(self.args[0])
+        program_state.data_stack_push(value, value_type)
 
         program_state.program_counter += 1
 
 
 class PopsInstruction(Instruction):
     def execute(self, program_state: Program):
-        symbol = program_state.data_stack_pop()
-        program_state.set_variable(self.args[0], symbol.get_value(), symbol.get_type())
+        value, value_type = program_state.data_stack_pop()
+        program_state.set_variable(self.args[0], value, value_type)
 
         program_state.program_counter += 1
 

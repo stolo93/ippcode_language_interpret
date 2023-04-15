@@ -10,6 +10,7 @@ import abc
 import ipp23.instruction as instr
 from .argument import Argument
 from .exceptions import GenericErrorIPP23, ErrorType
+from .type_enums import ArgumentType
 
 
 class InstructionFactory(abc.ABC):
@@ -42,6 +43,51 @@ class InstructionFactory(abc.ABC):
         """
         pass
 
+    @staticmethod
+    def _is_var(arg: Argument):
+        """
+        Is argument a variable
+        @param arg:
+        @return:
+        """
+        return arg.get_arg_type() == ArgumentType.VAR
+
+    @staticmethod
+    def _is_constant(arg: Argument):
+        """
+        Is argument a constant value
+        @param arg:
+        @return:
+        """
+        return arg.get_arg_type() == ArgumentType.CONST_VALUE
+
+    @staticmethod
+    def _is_label(arg: Argument):
+        """
+        Is argument a label
+        @param arg:
+        @return:
+        """
+        return arg.get_arg_type() == ArgumentType.LABEL
+
+    @staticmethod
+    def _is_symbol(arg: Argument):
+        """
+        Is argument a symbol
+        @param arg:
+        @return:
+        """
+        return InstructionFactory._is_var(arg) or InstructionFactory._is_constant(arg)
+
+    @staticmethod
+    def _is_type(arg: Argument):
+        """
+        Is argument a type
+        @param arg:
+        @return:
+        """
+        return arg.get_arg_type() == ArgumentType.TYPE
+
 
 # General purpose instructions
 
@@ -54,6 +100,8 @@ class MoveInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'MOVE':
@@ -114,6 +162,8 @@ class DefVarInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_var(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'DEFVAR':
@@ -129,6 +179,8 @@ class Int2CharInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'INT2CHAR':
@@ -144,6 +196,8 @@ class Stri2IntInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'STRI2INT':
@@ -159,6 +213,8 @@ class TypeInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'TYPE':
@@ -176,6 +232,8 @@ class CallInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_label(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'CALL':
@@ -206,6 +264,8 @@ class LabelInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_label(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'LABEL':
@@ -221,6 +281,8 @@ class JumpInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_label(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'JUMP':
@@ -236,6 +298,8 @@ class JumpIfEqInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_label(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'JUMPIFEQ':
@@ -251,6 +315,8 @@ class JumpIfNeqInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_label(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'JUMPIFNEQ':
@@ -266,6 +332,8 @@ class ExitInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_symbol(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'EXIT':
@@ -283,6 +351,8 @@ class ConcatInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'CONCAT':
@@ -298,6 +368,8 @@ class StrLenInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'STRLEN':
@@ -313,6 +385,8 @@ class GetCharInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'GETCHAR':
@@ -328,6 +402,8 @@ class SetCharInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'SETCHAR':
@@ -345,6 +421,8 @@ class AddInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'ADD':
@@ -360,6 +438,8 @@ class SubInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'SUB':
@@ -375,6 +455,8 @@ class MulInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'MUL':
@@ -390,6 +472,8 @@ class IdivInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'IDIV':
@@ -407,6 +491,8 @@ class LtInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'LT':
@@ -422,6 +508,8 @@ class GtInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'GT':
@@ -437,6 +525,8 @@ class EqInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'EQ':
@@ -454,6 +544,8 @@ class AndInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'AND':
@@ -469,6 +561,8 @@ class OrInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 3:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1]) and InstructionFactory._is_symbol(args[2])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'OR':
@@ -484,6 +578,8 @@ class NotInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_symbol(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'NOT':
@@ -501,6 +597,8 @@ class PushsInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_symbol(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'PUSHS':
@@ -516,6 +614,8 @@ class PopsInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_var(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'POPS':
@@ -533,6 +633,8 @@ class ReadInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 2:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not (InstructionFactory._is_var(args[0]) and InstructionFactory._is_type(args[1])):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'READ':
@@ -548,6 +650,8 @@ class WriteInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_symbol(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'WRITE':
@@ -563,6 +667,8 @@ class DprintInstructionFactory(InstructionFactory):
     def _validate_args(self, args: list[Argument]):
         if len(args) != 1:
             raise GenericErrorIPP23('Error: Invalid number of arguments', ErrorType.ERR_SYNTAX)
+        if not InstructionFactory._is_symbol(args[0]):
+            raise GenericErrorIPP23('Error: Invalid syntax, wrong argument types in input file', ErrorType.ERR_SYNTAX)
 
     def _validate_opcode(self, opcode: str):
         if opcode.upper() != 'DPRINT':

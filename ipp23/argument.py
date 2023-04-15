@@ -33,9 +33,12 @@ class Argument(abc.ABC):
         @param arg_element: xml element representation of the argument
         @return: Correct argument object
         """
-        arg_value = arg_element.text.strip()
+        arg_value = arg_element.text
         if arg_value is None:
             arg_value = ''
+
+        arg_value = arg_value.strip()
+
         arg_type = arg_element.attrib.get('type')
         # Choose correct argument type to create
         match arg_type:
@@ -75,8 +78,7 @@ class Argument(abc.ABC):
                     case 'LF':
                         frame = FrameType.LF
                     case _:
-                        XMLErrorIPP23(f'Error: Incorrect frame type {arg_value}', ErrorType.ERR_XML_STRUCT)
-                        return
+                        raise XMLErrorIPP23(f'Error: Frame does not exist {arg_value}', ErrorType.ERR_NO_EXIST_FRAME)
 
                 arg_obj = Variable(arg_value[at_pos+1:], frame)
 
