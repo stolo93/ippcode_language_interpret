@@ -33,7 +33,7 @@ class Program:
         # Stack of local frame
         self._local_frames: list[Frame] = []
         # Data stack (stack of symbols)
-        self._data_stack: list[Symbol] = []
+        self._data_stack = []
         # Call stack
         self._call_stack: list[int] = []
 
@@ -272,13 +272,13 @@ class Program:
             raise RuntimeErrorIPP23(f'Error: Invalid address: {address}', ErrorType.ERR_SEMANTICS)
         self._call_stack.append(address)
 
-    def data_stack_pop(self) -> Symbol:
+    def data_stack_pop(self):
         if not self._data_stack:
             raise RuntimeErrorIPP23('Error: Accessing an empty data stack', ErrorType.ERR_VAR_NOT_INIT)
         return self._data_stack.pop()
 
-    def data_stack_push(self, symbol: Symbol) -> None:
-        self._data_stack.append(symbol)
+    def data_stack_push(self, value, value_type: DataType) -> None:
+        self._data_stack.append((value, value_type))
 
     def __repr__(self):
         program_counter = f'Program counter: {self.program_counter}\n'

@@ -58,7 +58,7 @@ class Interpret:
             except ValueError:
                 raise XMLErrorIPP23(f"Error: Invalid instruction order attribute, {attributes['order']}", ErrorType.ERR_XML_STRUCT)
 
-            order -= 1
+            order -= 1  # For internal indexing purposes
             factory = Interpret._get_instruction_factory(opcode)
 
             # Get all instruction arguments
@@ -73,11 +73,11 @@ class Interpret:
                 arg = args_dict.get('arg'+str(i))
                 if was_none and arg is not None:
                     raise XMLErrorIPP23('Error: Instruction arguments are not numbered sequentially', ErrorType.ERR_XML_STRUCT)
-
                 if arg is None:
                     was_none = True
                     continue
                 args.append(Argument.create_argument(arg))
+
             # Insert instruction
             self.instructions.append(factory.create_instruction(opcode, order, args))
 
@@ -105,7 +105,8 @@ class Interpret:
         self.program_state.program_counter = 0
         program_length = len(self.instructions)
         while self.program_state.program_counter < program_length:
-            self.instructions[self.program_state.program_counter].execute(self.program_state)
+            current_instruction = self.instructions[self.program_state.program_counter]
+            current_instruction.execute(self.program_state)
 
     @staticmethod
     def _get_instruction_factory(opcode: str):
